@@ -15,7 +15,9 @@ const bookingRoutes=require("./routes/bookingRoutes")
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin:'*'
+}));
 app.use(express.json()); // For parsing application/json
 
 app.use(session({

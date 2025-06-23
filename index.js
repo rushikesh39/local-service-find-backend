@@ -33,6 +33,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/providers", searchRoutes);
 app.use("/api/services",serviceroutes);
 app.use("/api/booking",bookingRoutes)
+app.get('/',(res, req)=>{
+  res.send("welcome")
+})
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB"))

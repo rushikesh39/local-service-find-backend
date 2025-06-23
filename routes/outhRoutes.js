@@ -39,7 +39,7 @@ router.get(
       }
     );
     // res.send({ message: "Google login successful", token });
-    const redirectUrl = `https://locafy.onrender.com/api/social-auth-success?token=${token}&name=${encodeURIComponent(
+    const redirectUrl = `https://rushi-locafy.netlify.app/api/social-auth-success?token=${token}&name=${encodeURIComponent(
       req.user.name
     )}&email=${encodeURIComponent(req.user.email)}`;
 

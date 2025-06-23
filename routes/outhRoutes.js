@@ -39,7 +39,7 @@ router.get(
       }
     );
     // res.send({ message: "Google login successful", token });
-    const redirectUrl = `http://localhost:5173/social-auth-success?token=${token}&name=${encodeURIComponent(
+    const redirectUrl = `https://locafy.onrender.com/social-auth-success?token=${token}&name=${encodeURIComponent(
       req.user.name
     )}&email=${encodeURIComponent(req.user.email)}`;
 
@@ -66,7 +66,7 @@ router.get(
         expiresIn: "15d",
       }
     );
-    const redirectUrl = `http://localhost:5173/social-auth-success?token=${token}&name=${encodeURIComponent(
+    const redirectUrl = `https://locafy.onrender.com/social-auth-success?token=${token}&name=${encodeURIComponent(
       req.user.name
     )}&email=${encodeURIComponent(req.user.email)}`;
     res.redirect(redirectUrl);

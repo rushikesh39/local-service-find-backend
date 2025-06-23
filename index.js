@@ -16,7 +16,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin:['http://localhost:5173', 'https://your-frontend-domain.com']
+  origin:['http://localhost:5173', 'https://rushi-locafy.netlify.app/']
 }));
 app.use(express.json()); // For parsing application/json
 

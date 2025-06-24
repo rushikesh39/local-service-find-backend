@@ -49,7 +49,8 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ email: profile.emails[0].value });
+        let email =profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`;
+        let user = await User.findOne({ email });
         if (user) {
           if (!user.facebookId) {
             user.facebookId = profile.id;
@@ -60,7 +61,8 @@ passport.use(
         } else {
           user = await User.create({
             name: profile.displayName,
-            email:profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`,
+            email:
+              profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`,
             facebookId: profile.id,
             isVerified: true,
             role: "user",

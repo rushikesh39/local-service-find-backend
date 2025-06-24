@@ -49,14 +49,21 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ facebookId: profile.id });
-        if (!user) {
+        let user = await User.findOne({ email: profile.emails[0].value });
+        if (user) {
+          if (!user.facebookId) {
+            user.facebookId = profile.id;
+            user.provider = "facebook";
+            await user.save();
+          }
+          return done(null, user);
+        } else {
           user = await User.create({
             name: profile.displayName,
-            email:
-              profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`,
+            email:profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`,
             facebookId: profile.id,
             isVerified: true,
+            role: "user",
           });
         }
         return done(null, user);

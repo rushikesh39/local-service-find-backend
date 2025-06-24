@@ -49,6 +49,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log("profile",profile)
         let email =profile.emails?.[0]?.value || `fb-${profile.id}@facebook.com`;
         let user = await User.findOne({ email });
         if (user) {

@@ -62,11 +62,26 @@ const sendOtp = async (req, res) => {
     await OTP.create({ email, otp, otpExpires });
 
     await transporter.sendMail({
-      to: email,
-      from: process.env.EMAIL_USER,
-      subject: "OTP Verification",
-      html: `<h3>Your OTP is <strong>${otp}</strong></h3><p>Valid for 10 minutes</p>`,
-    });
+  to: email,
+  from: process.env.EMAIL_USER,
+  subject: "Verify Your Email - OTP Code",
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
+      <div style="text-align: center;">
+        <h2 style="color: #333;">🔐 Email Verification</h2>
+        <p style="font-size: 16px; color: #555;">Use the OTP below to verify your email address:</p>
+        <div style="margin: 20px auto; padding: 10px 20px; background-color: #ffffff; border: 2px dashed #4caf50; display: inline-block; border-radius: 5px;">
+          <p style="font-size: 24px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">${otp}</p>
+        </div>
+        <p style="color: #888;">This OTP is valid for <strong>10 minutes</strong>.</p>
+        <p style="font-size: 14px; color: #999;">If you didn’t request this, you can safely ignore this email.</p>
+      </div>
+      <hr style="margin: 30px 0;">
+      <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
+    </div>
+  `
+});
+
 
     res.status(200).json({ message: "OTP sent to email" });
   } catch (err) {

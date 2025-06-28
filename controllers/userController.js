@@ -8,15 +8,29 @@ const { use } = require("passport");
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role} = req.body;
+    const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All field required" });
     }
-    
+
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered !" });
+      if (!existingUser.isVerified) {
+        return res.status(403).json({
+          message: "Email already registered but not verified. Please verify your email.",
+          unverified: true,
+          user: {
+            _id: existingUser._id,
+            email: existingUser.email,
+            name: existingUser.name,
+            role: existingUser.role,
+          },
+        });
+      }
+      return res.status(400).json({ message: "Email already registered!" });
     }
+
     const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await User.create({
@@ -24,10 +38,11 @@ const registerUser = async (req, res) => {
       email,
       passwordHash,
       role: role || "user",
+      isVerified: false,
     });
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email,name:user.name,role:user.role},
+      { userId: user._id, email: user.email, name: user.name, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -47,6 +62,7 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // Send OTP
 const sendOtp = async (req, res) => {
   try {

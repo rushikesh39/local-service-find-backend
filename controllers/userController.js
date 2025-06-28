@@ -89,7 +89,7 @@ const sendOtp = async (req, res) => {
         <div style="margin: 20px auto; padding: 10px 20px; background-color: #ffffff; border: 2px dashed #4caf50; display: inline-block; border-radius: 5px;">
           <p style="font-size: 24px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">${otp}</p>
         </div>
-        <p style="color: #888;">This OTP is valid for <strong>10 minutes</strong>.</p>
+        <p style="color: #888;">This OTP is valid for <strong>5 minutes</strong>.</p>
         <p style="font-size: 14px; color: #999;">If you didn’t request this, you can safely ignore this email.</p>
       </div>
       <hr style="margin: 30px 0;">

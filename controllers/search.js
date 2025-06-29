@@ -3,7 +3,6 @@ const Services = require("../models/Services");
 
 exports.search = async (req, res) => {
   const { location, query } = req.query;
-
   try {
     if (!location || !query) {
       return res.status(400).json({ error: "Location and query are required" });
@@ -15,7 +14,8 @@ exports.search = async (req, res) => {
         {
           $or: [
             { name: { $regex: query, $options: "i" } },
-            { category: { $regex: query, $options: "i" } }
+            { category: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } }
           ]
         }
       ]

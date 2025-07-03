@@ -86,10 +86,11 @@ getBookingsForUser = async (req, res) => {
 
 const updateBookingStatus = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    // const { id } = req.params;
+    const {id, newStatus } = req.body;
+    console.log("data",id, newStatus)
 
-    if (!["pending", "confirmed", "completed", "cancelled"].includes(status)) {
+    if (!["pending", "confirmed", "completed", "cancelled"].includes(newStatus)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
@@ -100,7 +101,7 @@ const updateBookingStatus = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    booking.status = status;
+    booking.status = newStatus;
     await booking.save();
 
     res.json({ message: "Booking status updated", booking });

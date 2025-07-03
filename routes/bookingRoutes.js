@@ -8,5 +8,5 @@ const authenticateProvider = require("../middleware/providerMiddleware");
 router.post("/book", auth, bookService);
 router.get("/provider/get-booking", authenticateProvider, getBookingsForProvider);
 router.get("/user/get-booking", auth, getBookingsForUser);
-router.post("/provider/update-booking-status/:id", authenticateProvider,updateBookingStatus );
+router.patch("/provider/update-booking-status/", authenticateProvider,updateBookingStatus );
 module.exports = router;

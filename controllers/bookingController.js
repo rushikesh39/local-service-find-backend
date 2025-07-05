@@ -5,7 +5,7 @@ const User = require("../models/User");
 
 bookService = async (req, res) => {
   try {
-    const { serviceId, name,mobile, scheduledDate, address, notes } = req.body;
+    const { serviceId, name, mobile, scheduledDate, address, notes } = req.body;
 
     const userId = req.user.id;
     // Check if service exists
@@ -87,10 +87,12 @@ getBookingsForUser = async (req, res) => {
 const updateBookingStatus = async (req, res) => {
   try {
     // const { id } = req.params;
-    const {id, newStatus } = req.body;
-    console.log("data",id, newStatus)
+    const { id, newStatus } = req.body;
+    console.log("data", id, newStatus);
 
-    if (!["pending", "confirmed", "completed", "cancelled"].includes(newStatus)) {
+    if (
+      !["pending", "confirmed", "completed", "cancelled"].includes(newStatus)
+    ) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
@@ -110,5 +112,107 @@ const updateBookingStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+const todaysBooking = async (req, res) => {
+  try {
+    const providerId = req.user.id;
 
-module.exports = { bookService, getBookingsForProvider,getBookingsForUser,updateBookingStatus };
+    // Today's date range
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const bookings = await Booking.find({
+      providerId,
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    })
+      .populate("userId", "name email mobile")
+      .populate("serviceId", "name category")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(bookings);
+  } catch (err) {
+    console.error("Error in todaysBooking:", err);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching today's bookings" });
+  }
+};
+const getProviderDashboardStats = async (req, res) => {
+  try {
+    const providerId = req.user.id;
+
+    // Fetch all bookings for the provider
+    const bookings = await Booking.find({ providerId });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todaysBookings = await Booking.find({
+      providerId,
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    })
+      .populate("userId", "name email mobile")
+      .populate("serviceId", "name category price")
+      .sort({ createdAt: -1 });
+
+    const todaySales = todaysBookings.reduce((sum, b) => {
+      if (b.status == "completed") {
+        const price = parseFloat(b?.serviceId.price) || 0;
+        return sum + price;
+      }
+    }, 0);
+
+    const pendingRequests = bookings.filter(
+      (b) => b.status === "pending"
+    ).length;
+    const completedJobs = bookings.filter(
+      (b) => b.status === "completed"
+    ).length;
+
+    // Top services by count
+    const topServiceCounts = {};
+    for (let b of bookings) {
+      const sid = b.serviceId.toString();
+      topServiceCounts[sid] = (topServiceCounts[sid] || 0) + 1;
+    }
+
+    const services = await Service.find({
+      _id: { $in: Object.keys(topServiceCounts) },
+    });
+
+    const topServices = services
+      .map((service) => ({
+        name: service.name,
+        count: topServiceCounts[service._id.toString()] || 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    res.status(200).json({
+      todaySales,
+      todayBookings: todaysBookings.length,
+      totalBookings: bookings.length,
+      pendingRequests,
+      completedJobs,
+      topServices,
+    });
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching dashboard stats" });
+  }
+};
+
+module.exports = {
+  bookService,
+  getBookingsForProvider,
+  getBookingsForUser,
+  updateBookingStatus,
+  todaysBooking,
+  getProviderDashboardStats,
+};

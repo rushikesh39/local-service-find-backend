@@ -208,6 +208,7 @@ const getProviderDashboardStats = async (req, res) => {
   }
 };
 
+
 module.exports = {
   bookService,
   getBookingsForProvider,

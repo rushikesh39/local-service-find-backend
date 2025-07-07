@@ -154,6 +154,36 @@ const loginUser = async (req, res) => {
   }
 };
 
+const contactUs = async (req, res) => {
+  const { name, email, subject, message } = req.body;
+
+  if (!name || !email || !message||!subject) {
+    return res.status(400).json({ error: "Name, email, and message are required." });
+  }
+
+  try {
+    await transporter.sendMail({
+      to: process.env.EMAIL_USER,
+      from: email,
+      subject: subject || "New Contact Form Submission",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>📩 New Contact Message</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+          <hr>
+          <p style="font-size: 12px; color: #999;">This message was sent via the Locafy Contact Form.</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({ message: "Message sent successfully!" });
+  } catch (error) {
+    console.error("Contact form error:", error);
+    res.status(500).json({ error: "Failed to send message." });
+  }
+};
 
 
-module.exports = { registerUser, sendOtp, verifyOtp, loginUser };
+module.exports = { registerUser, sendOtp, verifyOtp, loginUser,contactUs };

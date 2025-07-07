@@ -1,5 +1,6 @@
 const Service = require("../models/Services");
 const User = require("../models/User");
+const Booking = require("../models/Booking");
 const { cloudinary } = require("../config/cloudinary");
 
 const addService = async (req, res) => {
@@ -146,6 +147,49 @@ const servicesList = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+const getPopularServices = async (req, res) => {
+  try {
+    const limit = 5;
+    const popular = await Booking.aggregate([
+      {
+        $group: {
+          _id: "$serviceId",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit },
+    ]);
+
+    // Extract service IDs
+    const serviceIds = popular.map((item) => item._id);
+
+    // Fetch service details
+    const services = await Service.find({ _id: { $in: serviceIds } });
+
+    // Merge booking count with service info
+    const result = popular.map((p) => {
+      const service = services.find(
+        (s) => s._id.toString() === p._id.toString()
+      );
+      return {
+        _id: p._id,
+        name: service?.name || "Unknown",
+        category: service?.category || "",
+        price: service?.price || 0,
+        image: service?.image || "",
+        count: p.count,
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error getting popular services:", err);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching popular services" });
+  }
+};
 
 module.exports = {
   addService,
@@ -154,4 +198,5 @@ module.exports = {
   getServicesById,
   deleteService,
   servicesList,
+  getPopularServices,
 };

@@ -149,7 +149,7 @@ const servicesList = async (req, res) => {
 };
 const getPopularServices = async (req, res) => {
   try {
-    const limit = 5;
+    const limit = 4;
     const popular = await Booking.aggregate([
       {
         $group: {
@@ -176,6 +176,7 @@ const getPopularServices = async (req, res) => {
         _id: p._id,
         name: service?.name || "Unknown",
         category: service?.category || "",
+        location:service?.location||"",
         price: service?.price || 0,
         image: service?.image || "",
         count: p.count,

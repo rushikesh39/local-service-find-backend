@@ -11,14 +11,13 @@ const authRoutes = require("./routes/outhRoutes")
 const searchRoutes=require("./routes/searchRoutes")
 const serviceroutes=require("./routes/serviceRoutes")
 const bookingRoutes=require("./routes/bookingRoutes")
+const reviewRoutes=require("./routes/reviewRoutes")
 
 const app = express();
-
-// Middleware
 app.use(cors({
   origin:['http://localhost:5173', 'https://rushi-locafy.netlify.app']
 }));
-app.use(express.json()); // For parsing application/json
+app.use(express.json());
 
 app.use(session({
   secret: "some secret",
@@ -33,6 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/providers", searchRoutes);
 app.use("/api/services",serviceroutes);
 app.use("/api/booking",bookingRoutes)
+app.use("/api/reviews/",reviewRoutes)
 
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome' });

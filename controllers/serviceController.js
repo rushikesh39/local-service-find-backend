@@ -174,11 +174,11 @@ const getPopularServices = async (req, res) => {
       );
       return {
         _id: p._id,
-        name: service?.name || "Unknown",
-        category: service?.category || "",
-        location:service?.location||"",
-        price: service?.price || 0,
-        image: service?.image || "",
+        name: service?.name,
+        category: service?.category,
+        location:service?.location,
+        price: service?.price ,
+        image: service?.image,
         count: p.count,
       };
     });

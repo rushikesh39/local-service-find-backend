@@ -62,41 +62,41 @@ const getServices = async (req, res) => {
 };
 
 const updateService = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, description, price, category, location } = req.body;
-    const service = await Service.findById(id);
+  // try {
+  //   const { id } = req.params;
+  //   const { name, description, price, category, location } = req.body;
+  //   const service = await Service.findById(id);
 
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
-    if (req.user && service.providerId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
+  //   if (!service) {
+  //     return res.status(404).json({ message: "Service not found" });
+  //   }
+  //   if (req.user && service.providerId.toString() !== req.user.id) {
+  //     return res.status(403).json({ message: "Unauthorized" });
+  //   }
 
-    // Update fields
-    if (name) service.name = name;
-    if (description) service.description = description;
-    if (category) service.category = category;
-    if (price) service.price = price;
-    if (location) service.location = location;
+  //   // Update fields
+  //   if (name) service.name = name;
+  //   if (description) service.description = description;
+  //   if (category) service.category = category;
+  //   if (price) service.price = price;
+  //   if (location) service.location = location;
 
-    // If new image uploaded, delete old and update
-    if (req.file?.path && req.file?.filename) {
-      // 🔥 Delete old image from Cloudinary
-      await cloudinary.uploader.destroy(service.imagePublicId);
+  //   // If new image uploaded, delete old and update
+  //   if (req.file?.path && req.file?.filename) {
+  //     // 🔥 Delete old image from Cloudinary
+  //     await cloudinary.uploader.destroy(service.imagePublicId);
 
-      // ✅ Set new image URL and public_id
-      service.image = req.file.path;
-      service.imagePublicId = req.file.filename;
-    }
+  //     // ✅ Set new image URL and public_id
+  //     service.image = req.file.path;
+  //     service.imagePublicId = req.file.filename;
+  //   }
 
-    const updatedService = await service.save();
-    res.json({ message: "Service updated", service: updatedService });
-  } catch (err) {
-    console.error("Update error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+  //   const updatedService = await service.save();
+  //   res.json({ message: "Service updated", service: updatedService });
+  // } catch (err) {
+  //   console.error("Update error:", err);
+  //   res.status(500).json({ message: "Server error" });
+  // }
 };
 
 const getServicesById = async (req, res) => {
@@ -116,26 +116,26 @@ const getServicesById = async (req, res) => {
 };
 
 const deleteService = async (req, res) => {
-  try {
-    const { id } = req.params;
+  // try {
+  //   const { id } = req.params;
 
-    const service = await Service.findById(id);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
-    // Authorization check (optional)
-    if (req.user && service.providerId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-    if (service.imagePublicId) {
-      await cloudinary.uploader.destroy(service.imagePublicId);
-    }
-    await service.deleteOne();
-    res.json({ message: "Service deleted successfully" });
-  } catch (err) {
-    console.error("Delete error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+  //   const service = await Service.findById(id);
+  //   if (!service) {
+  //     return res.status(404).json({ message: "Service not found" });
+  //   }
+  //   // Authorization check (optional)
+  //   if (req.user && service.providerId.toString() !== req.user.id) {
+  //     return res.status(403).json({ message: "Unauthorized" });
+  //   }
+  //   if (service.imagePublicId) {
+  //     await cloudinary.uploader.destroy(service.imagePublicId);
+  //   }
+  //   await service.deleteOne();
+  //   res.json({ message: "Service deleted successfully" });
+  // } catch (err) {
+  //   console.error("Delete error:", err);
+  //   res.status(500).json({ message: "Server error" });
+  // }
 };
 const servicesList = async (req, res) => {
   try {
@@ -195,9 +195,9 @@ const getPopularServices = async (req, res) => {
 module.exports = {
   addService,
   getServices,
-  updateService,
+  // updateService,
   getServicesById,
-  deleteService,
+  // deleteService,
   servicesList,
   getPopularServices,
 };

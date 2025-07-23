@@ -88,10 +88,8 @@ const updateBookingStatus = async (req, res) => {
   try {
     // const { id } = req.params;
     const { id, newStatus } = req.body;
-    console.log("data", id, newStatus);
-
     if (
-      !["pending", "confirmed", "completed", "cancelled"].includes(newStatus)
+      !["pending", "confirmed",  "cancelled"].includes(newStatus)
     ) {
       return res.status(400).json({ message: "Invalid status" });
     }
@@ -160,10 +158,11 @@ const getProviderDashboardStats = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const todaySales = todaysBookings.reduce((sum, b) => {
-      if (b.status == "completed") {
-        const price = parseFloat(b?.serviceId.price) || 0;
+      if (b?.status === "completed") {
+        const price = parseFloat(b?.serviceId?.price) || 0;
         return sum + price;
       }
+      return sum;
     }, 0);
 
     const pendingRequests = bookings.filter(

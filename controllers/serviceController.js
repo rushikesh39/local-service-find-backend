@@ -179,6 +179,7 @@ const getPopularServices = async (req, res) => {
         location:service?.location,
         price: service?.price ,
         image: service?.image,
+        rating:service?.rating,
         count: p.count,
       };
     });

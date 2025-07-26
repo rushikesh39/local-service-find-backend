@@ -61,42 +61,30 @@ const getServices = async (req, res) => {
   }
 };
 
-const updateService = async (req, res) => {
-  // try {
-  //   const { id } = req.params;
-  //   const { name, description, price, category, location } = req.body;
-  //   const service = await Service.findById(id);
+const updateStatus = async (req, res) => {
+  try {
+    const { serviceId } = req.body;
 
-  //   if (!service) {
-  //     return res.status(404).json({ message: "Service not found" });
-  //   }
-  //   if (req.user && service.providerId.toString() !== req.user.id) {
-  //     return res.status(403).json({ message: "Unauthorized" });
-  //   }
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
 
-  //   // Update fields
-  //   if (name) service.name = name;
-  //   if (description) service.description = description;
-  //   if (category) service.category = category;
-  //   if (price) service.price = price;
-  //   if (location) service.location = location;
+    if (!req.user || service.providerId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
 
-  //   // If new image uploaded, delete old and update
-  //   if (req.file?.path && req.file?.filename) {
-  //     // 🔥 Delete old image from Cloudinary
-  //     await cloudinary.uploader.destroy(service.imagePublicId);
+    service.status = service.status === "active" ? "inactive" : "active";
+    await service.save();
 
-  //     // ✅ Set new image URL and public_id
-  //     service.image = req.file.path;
-  //     service.imagePublicId = req.file.filename;
-  //   }
-
-  //   const updatedService = await service.save();
-  //   res.json({ message: "Service updated", service: updatedService });
-  // } catch (err) {
-  //   console.error("Update error:", err);
-  //   res.status(500).json({ message: "Server error" });
-  // }
+    return res.status(200).json({
+      message: `Service status changed to '${service.status}'`,
+      status: service.status, 
+    });
+  } catch (error) {
+    console.error("Service status toggle failed:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 const getServicesById = async (req, res) => {
@@ -115,28 +103,6 @@ const getServicesById = async (req, res) => {
   }
 };
 
-const deleteService = async (req, res) => {
-  // try {
-  //   const { id } = req.params;
-
-  //   const service = await Service.findById(id);
-  //   if (!service) {
-  //     return res.status(404).json({ message: "Service not found" });
-  //   }
-  //   // Authorization check (optional)
-  //   if (req.user && service.providerId.toString() !== req.user.id) {
-  //     return res.status(403).json({ message: "Unauthorized" });
-  //   }
-  //   if (service.imagePublicId) {
-  //     await cloudinary.uploader.destroy(service.imagePublicId);
-  //   }
-  //   await service.deleteOne();
-  //   res.json({ message: "Service deleted successfully" });
-  // } catch (err) {
-  //   console.error("Delete error:", err);
-  //   res.status(500).json({ message: "Server error" });
-  // }
-};
 const servicesList = async (req, res) => {
   try {
     const services = await Service.find();
@@ -165,7 +131,7 @@ const getPopularServices = async (req, res) => {
     const serviceIds = popular.map((item) => item._id);
 
     // Fetch service details
-    const services = await Service.find({ _id: { $in: serviceIds } });
+    const services = await Service.find({ _id: { $in: serviceIds }, status: "active" });
 
     // Merge booking count with service info
     const result = popular.map((p) => {
@@ -176,10 +142,10 @@ const getPopularServices = async (req, res) => {
         _id: p._id,
         name: service?.name,
         category: service?.category,
-        location:service?.location,
-        price: service?.price ,
+        location: service?.location,
+        price: service?.price,
         image: service?.image,
-        rating:service?.rating,
+        rating: service?.rating,
         count: p.count,
       };
     });
@@ -193,12 +159,31 @@ const getPopularServices = async (req, res) => {
   }
 };
 
+const getTopRatedServices = async (req, res) => {
+  try {
+    const limit = 4;
+
+    const topRatedServices = await Service.find({
+      rating: { $ne: null },
+      status: "active",
+    })
+      .sort({ rating: -1 })
+      .limit(limit);
+
+    res.status(200).json(topRatedServices);
+  } catch (error) {
+    console.error("Error fetching top-rated services:", error);
+    res.status(500).json({ message: "Server error while fetching top-rated services" });
+  }
+};
+
+
 module.exports = {
   addService,
   getServices,
-  // updateService,
+  updateStatus,
   getServicesById,
-  // deleteService,
   servicesList,
   getPopularServices,
+  getTopRatedServices
 };

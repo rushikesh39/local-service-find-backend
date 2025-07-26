@@ -15,6 +15,7 @@ const serviceSchema = new mongoose.Schema(
     imagePublicId: { type: String, required: true },
     location: { type: String, required: true },
     rating: { type: Number, min: 1, max: 5, default: null },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
   },
   { timestamps: true }
 );

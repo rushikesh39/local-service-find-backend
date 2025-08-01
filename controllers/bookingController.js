@@ -86,30 +86,53 @@ getBookingsForUser = async (req, res) => {
 
 const updateBookingStatus = async (req, res) => {
   try {
-    // const { id } = req.params;
     const { id, newStatus } = req.body;
-    if (
-      !["pending", "confirmed",  "cancelled"].includes(newStatus)
-    ) {
-      return res.status(400).json({ message: "Invalid status" });
+
+    // ✅ 1. Validate new status
+    const allowedStatuses = ["pending", "confirmed", "cancelled", "completed"];
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(400).json({ message: "Invalid status value" });
     }
 
+    // ✅ 2. Fetch booking
     const booking = await Booking.findById(id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-
-    if (booking.providerId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized" });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
     }
 
+    // ✅ 3. Authorization check
+    // Providers can update their own bookings
+    // Users can cancel their own bookings only
+    if (
+      booking.providerId.toString() !== req.user.id &&
+      !(newStatus === "cancelled" && booking.userId.toString() === req.user.id)
+    ) {
+      return res.status(403).json({ message: "Unauthorized action" });
+    }
+
+    // ✅ 4. Prevent invalid transitions
+    const currentStatus = booking.status;
+    if (currentStatus === "completed") {
+      return res.status(400).json({ message: "Completed bookings cannot be changed" });
+    }
+    if (currentStatus === "cancelled") {
+      return res.status(400).json({ message: "Cancelled bookings cannot be updated" });
+    }
+
+    // ✅ 5. Update and return the updated booking
     booking.status = newStatus;
     await booking.save();
 
-    res.json({ message: "Booking status updated", booking });
+    return res.json({
+      message: `Booking status updated to '${newStatus}' successfully`,
+      booking,
+    });
   } catch (err) {
     console.error("Status update error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error. Please try again." });
   }
 };
+
 const todaysBooking = async (req, res) => {
   try {
     const providerId = req.user.id;
@@ -141,42 +164,55 @@ const getProviderDashboardStats = async (req, res) => {
   try {
     const providerId = req.user.id;
 
-    // Fetch all bookings for the provider
-    const bookings = await Booking.find({ providerId });
+    // All bookings for provider
+    const bookings = await Booking.find({ providerId }).populate("serviceId");
+
+    // Today range
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    const todaysBookings = await Booking.find({
-      providerId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-    })
-      .populate("userId", "name email mobile")
-      .populate("serviceId", "name category price")
-      .sort({ createdAt: -1 });
+    // Today's bookings
+    const todaysBookings = bookings.filter(
+      (b) => b.createdAt >= startOfDay && b.createdAt <= endOfDay
+    );
 
+    // ======== SALES CALCULATIONS ==========
     const todaySales = todaysBookings.reduce((sum, b) => {
-      if (b?.status === "completed") {
-        const price = parseFloat(b?.serviceId?.price) || 0;
-        return sum + price;
+      if (b.status === "completed") {
+        return sum + (parseFloat(b?.serviceId?.price) || 0);
       }
       return sum;
     }, 0);
 
-    const pendingRequests = bookings.filter(
-      (b) => b.status === "pending"
-    ).length;
-    const completedJobs = bookings.filter(
-      (b) => b.status === "completed"
-    ).length;
+    const totalSales = bookings.reduce((sum, b) => {
+      if (b.status === "completed") {
+        return sum + (parseFloat(b?.serviceId?.price) || 0);
+      }
+      return sum;
+    }, 0);
 
-    // Top services by count
+    // ======= STATS =========
+    const todayStats = {
+      sales: todaySales,
+      bookings: todaysBookings.length,
+      pending: todaysBookings.filter((b) => b.status === "pending").length,
+      completed: todaysBookings.filter((b) => b.status === "completed").length,
+    };
+
+    const totalStats = {
+      sales: totalSales,
+      bookings: bookings.length,
+      pending: bookings.filter((b) => b.status === "pending").length,
+      completed: bookings.filter((b) => b.status === "completed").length,
+    };
+
+    // ======= TOP SERVICES =========
     const topServiceCounts = {};
     for (let b of bookings) {
-      const sid = b.serviceId.toString();
-      topServiceCounts[sid] = (topServiceCounts[sid] || 0) + 1;
+      const sid = b.serviceId?._id?.toString();
+      if (sid) topServiceCounts[sid] = (topServiceCounts[sid] || 0) + 1;
     }
 
     const services = await Service.find({
@@ -192,11 +228,8 @@ const getProviderDashboardStats = async (req, res) => {
       .slice(0, 5);
 
     res.status(200).json({
-      todaySales,
-      todayBookings: todaysBookings.length,
-      totalBookings: bookings.length,
-      pendingRequests,
-      completedJobs,
+      today: todayStats,
+      total: totalStats,
       topServices,
     });
   } catch (err) {

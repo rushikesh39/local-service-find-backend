@@ -116,16 +116,64 @@ const verifyOtp = async (req, res) => {
     if (otpEntry.otp !== otp || otpEntry.otpExpires < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
-
+ 
     await User.findOneAndUpdate({ email }, { isVerified: true });
     await OTP.deleteOne({ email });
 
+    const user = await User.findOne({ email });
+     await sendRegistrationMail(user.email, user.name);
     res.status(200).json({ message: "Email verified successfully" });
+     
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({ message: "Server error while verifying OTP" });
   }
 };
+// Send Registration Success Email (Enhanced Design)
+const sendRegistrationMail = async (email, name) => {
+  try {
+    await transporter.sendMail({
+      to: email,
+      from: `"Locafy Support" <${process.env.EMAIL_USER}>`,
+      subject: "🎉 Welcome to Locafy - Your Registration is Complete!",
+      html: `
+      <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; padding: 25px; background: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 12px rgba(0,0,0,0.05);">
+        <div style="text-align: center;">
+          <img src="https://i.ibb.co/7r3gZfB/locafy-logo.png" alt="Locafy Logo" width="120" style="margin-bottom: 15px;">
+          <h2 style="color: #28a745; font-size: 24px; margin-bottom: 10px;">Welcome to Locafy, ${name}! 🎉</h2>
+          <p style="font-size: 16px; color: #444; line-height: 1.6;">
+            We're thrilled to have you on board! Your account has been successfully 
+            <strong style="color:#28a745;">registered and verified</strong>.
+          </p>
+          <p style="font-size: 16px; color: #444; line-height: 1.6;">
+            Start exploring trusted service providers in your area with just a few clicks.
+          </p>
+          <a href="${process.env.FRONTEND_URL}/login" 
+             style="display:inline-block; margin: 20px auto; padding: 14px 28px; background-color: #28a745; color: #fff; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 6px; transition: 0.3s;">
+             🔑 Login to Your Account
+          </a>
+        </div>
+        <div style="margin-top: 25px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
+          <p style="font-size: 14px; color: #666; margin: 0;">
+            Need help getting started? Visit our 
+            <a href="${process.env.FRONTEND_URL}/help" style="color: #007bff; text-decoration: none;">Help Center</a> 
+            or contact our support team.
+          </p>
+        </div>
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #aaa; text-align: center; line-height: 1.5;">
+          You received this email because you signed up on Locafy.<br>
+          If this wasn't you, please ignore this message.<br>
+          &copy; ${new Date().getFullYear()} Locafy. All rights reserved.
+        </p>
+      </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Registration email send error:", error);
+  }
+};
+
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

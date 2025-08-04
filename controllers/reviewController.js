@@ -56,7 +56,7 @@ const submitReview = async (req, res) => {
       reviewImages: imageUrl ? [imageUrl] : [],
     });
 
-    booking.status = "completed";
+    // booking.status = "completed";
     await booking.save();
 
     const ratedReviews = await Review.find({ providerId, rating: { $gt: 0 } });

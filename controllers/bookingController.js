@@ -1,18 +1,100 @@
-// controllers/bookingController.js
 const Booking = require("../models/Booking");
 const Service = require("../models/Services");
 const User = require("../models/User");
+const transporter = require("../config/nodemail");
 
-bookService = async (req, res) => {
+const sendBookingMail = async (
+  email,
+  name,
+  serviceName,
+  status,
+  scheduledDate,
+  address
+) => {
+  try {
+    let statusColor, statusText;
+
+    switch (status) {
+      case "pending":
+        statusColor = "#f39c12";
+        statusText = "⏳ Pending Confirmation";
+        break;
+      case "confirmed":
+        statusColor = "#28a745";
+        statusText = "✅ Booking Confirmed";
+        break;
+      case "cancelled":
+        statusColor = "#e74c3c";
+        statusText = "❌ Booking Cancelled";
+        break;
+      case "completed":
+        statusColor = "#3498db";
+        statusText = "🎉 Service Completed";
+        break;
+      default:
+        statusColor = "#333";
+        statusText = status;
+    }
+
+    await transporter.sendMail({
+      to: email,
+      from: `"Locafy Bookings" <${process.env.EMAIL_USER}>`,
+      subject: `📢 Your Booking Status: ${statusText}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 25px; background: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 12px rgba(0,0,0,0.05);">
+          <div style="text-align: center;">
+            <h2 style="color: ${statusColor};">${statusText}</h2>
+            <p style="font-size: 16px; color: #555;">Hello <strong>${name}</strong>,</p>
+            <p style="font-size: 16px; color: #555;">
+              Your booking for <strong>${serviceName}</strong> has been updated to the status: 
+              <span style="color: ${statusColor}; font-weight: bold;">${status.toUpperCase()}</span>.
+            </p>
+            <div style="margin: 20px auto; padding: 12px 24px; background-color: #f9f9f9; border-radius: 6px; text-align: left;">
+              <p style="margin: 6px 0;"><strong>📅 Scheduled Date:</strong> ${new Date(
+                scheduledDate
+              ).toLocaleString()}</p>
+              <p style="margin: 6px 0;"><strong>📍 Address:</strong> ${address}</p>
+            </div>
+            ${
+              status === "confirmed"
+                ? `<p style="font-size: 16px; color: #28a745;">Please be ready on the scheduled date. Our provider will reach you as per your booking time.</p>`
+                : ""
+            }
+            ${
+              status === "cancelled"
+                ? `<p style="font-size: 16px; color: #e74c3c;">Your booking has been cancelled. If this was a mistake, please rebook the service.</p>`
+                : ""
+            }
+            ${
+              status === "completed"
+                ? `<p style="font-size: 16px; color: #3498db;">Thank you for using Locafy. We hope you had a great experience! </p>`
+                : ""
+            }
+            <p style="margin-top: 20px; font-size: 14px; color: #888;">If you have any questions, reply to this email or contact our support team.</p>
+          </div>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #aaa; text-align: center;">
+            &copy; ${new Date().getFullYear()} Locafy. All rights reserved.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Booking email send error:", error);
+  }
+};
+
+const bookService = async (req, res) => {
   try {
     const { serviceId, name, mobile, scheduledDate, address, notes } = req.body;
-
     const userId = req.user.id;
+
     // Check if service exists
     const service = await Service.findById(serviceId);
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
     }
+
     // Check if user is verified
     const user = await User.findById(userId);
     if (!user || !user.isVerified) {
@@ -20,7 +102,8 @@ bookService = async (req, res) => {
         message: "Email not verified. Please verify your email before booking.",
       });
     }
-    // Proceed with booking
+
+    // Create booking
     const booking = new Booking({
       userId,
       serviceId,
@@ -33,6 +116,18 @@ bookService = async (req, res) => {
     });
 
     await booking.save();
+
+    // ✅ Send Pending Booking Email
+   
+    await sendBookingMail(
+      user.email,
+      user.name,
+      service.name,
+      "pending",
+      scheduledDate,
+      address
+    );
+
     res.status(201).json({ message: "Service booked successfully", booking });
   } catch (err) {
     console.error("Booking error:", err);
@@ -40,7 +135,7 @@ bookService = async (req, res) => {
   }
 };
 
-getBookingsForProvider = async (req, res) => {
+const getBookingsForProvider = async (req, res) => {
   try {
     const providerId = req.user.id;
     const bookings = await Booking.find({ providerId })
@@ -60,7 +155,7 @@ getBookingsForProvider = async (req, res) => {
   }
 };
 
-getBookingsForUser = async (req, res) => {
+const getBookingsForUser = async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -88,40 +183,52 @@ const updateBookingStatus = async (req, res) => {
   try {
     const { id, newStatus } = req.body;
 
-    // ✅ 1. Validate new status
     const allowedStatuses = ["pending", "confirmed", "cancelled", "completed"];
     if (!allowedStatuses.includes(newStatus)) {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
-    // ✅ 2. Fetch booking
     const booking = await Booking.findById(id);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // ✅ 3. Authorization check
-    // Providers can update their own bookings
-    // Users can cancel their own bookings only
     if (
       booking.providerId.toString() !== req.user.id &&
-      !(newStatus === "cancelled" && booking.userId.toString() === req.user.id)
+      !(newStatus === "cancelled" && booking.userId.toString() === req.user.id) &&
+      !(newStatus === "completed" && booking.userId.toString() === req.user.id && booking.status === "confirmed")
     ) {
       return res.status(403).json({ message: "Unauthorized action" });
     }
 
-    // ✅ 4. Prevent invalid transitions
     const currentStatus = booking.status;
     if (currentStatus === "completed") {
-      return res.status(400).json({ message: "Completed bookings cannot be changed" });
+      return res
+        .status(400)
+        .json({ message: "Completed bookings cannot be changed" });
     }
     if (currentStatus === "cancelled") {
-      return res.status(400).json({ message: "Cancelled bookings cannot be updated" });
+      return res
+        .status(400)
+        .json({ message: "Cancelled bookings cannot be updated" });
     }
 
-    // ✅ 5. Update and return the updated booking
     booking.status = newStatus;
     await booking.save();
+
+    // ✅ Send Status Update Email
+    const bookingDetails = await Booking.findById(id)
+      .populate("userId", "name email")
+      .populate("serviceId", "name");
+  
+    await sendBookingMail(
+      bookingDetails.userId.email,
+      bookingDetails.userId.name,
+      bookingDetails.serviceId.name,
+      newStatus,
+      bookingDetails.scheduledDate,
+      bookingDetails.address
+    );
 
     return res.json({
       message: `Booking status updated to '${newStatus}' successfully`,
@@ -137,7 +244,6 @@ const todaysBooking = async (req, res) => {
   try {
     const providerId = req.user.id;
 
-    // Today's date range
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -160,25 +266,21 @@ const todaysBooking = async (req, res) => {
       .json({ message: "Server error while fetching today's bookings" });
   }
 };
+
 const getProviderDashboardStats = async (req, res) => {
   try {
     const providerId = req.user.id;
-
-    // All bookings for provider
     const bookings = await Booking.find({ providerId }).populate("serviceId");
 
-    // Today range
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Today's bookings
     const todaysBookings = bookings.filter(
       (b) => b.createdAt >= startOfDay && b.createdAt <= endOfDay
     );
 
-    // ======== SALES CALCULATIONS ==========
     const todaySales = todaysBookings.reduce((sum, b) => {
       if (b.status === "completed") {
         return sum + (parseFloat(b?.serviceId?.price) || 0);
@@ -193,7 +295,6 @@ const getProviderDashboardStats = async (req, res) => {
       return sum;
     }, 0);
 
-    // ======= STATS =========
     const todayStats = {
       sales: todaySales,
       bookings: todaysBookings.length,
@@ -208,7 +309,6 @@ const getProviderDashboardStats = async (req, res) => {
       completed: bookings.filter((b) => b.status === "completed").length,
     };
 
-    // ======= TOP SERVICES =========
     const topServiceCounts = {};
     for (let b of bookings) {
       const sid = b.serviceId?._id?.toString();
@@ -239,7 +339,6 @@ const getProviderDashboardStats = async (req, res) => {
       .json({ message: "Server error while fetching dashboard stats" });
   }
 };
-
 
 module.exports = {
   bookService,

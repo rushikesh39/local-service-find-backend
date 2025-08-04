@@ -79,7 +79,7 @@ const sendOtp = async (req, res) => {
 
     await transporter.sendMail({
   to: email,
-  from: process.env.EMAIL_USER,
+  from: `"Locafy " <${process.env.EMAIL_USER}>`,
   subject: "Verify Your Email - OTP Code",
   html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
@@ -139,7 +139,7 @@ const sendRegistrationMail = async (email, name) => {
       html: `
       <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 20px auto; padding: 25px; background: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 12px rgba(0,0,0,0.05);">
         <div style="text-align: center;">
-          <img src="https://i.ibb.co/7r3gZfB/locafy-logo.png" alt="Locafy Logo" width="120" style="margin-bottom: 15px;">
+          <img src="https://rushi-locafy.netlify.app/main-logo.png" alt="Locafy Logo" width="120" style="margin-bottom: 15px;">
           <h2 style="color: #28a745; font-size: 24px; margin-bottom: 10px;">Welcome to Locafy, ${name}! 🎉</h2>
           <p style="font-size: 16px; color: #444; line-height: 1.6;">
             We're thrilled to have you on board! Your account has been successfully 

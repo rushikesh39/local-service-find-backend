@@ -7,7 +7,7 @@ const upload = require("../middleware/upload");
 router.get("/",servicesList);
 router.post("/add", authenticateProvider, upload.single("image"), addService);
 router.get("/provider/:providerId",authenticateProvider,getServices);
-router.get("/provider/service/:serviceId",authenticateProvider,getServicesById);
+router.get("/:serviceId",getServicesById);
 router.put("/update-status", authenticateProvider, updateStatus);
 router.get("/popular-services",getPopularServices);
 router.get("/top-rated-services",getTopRatedServices);

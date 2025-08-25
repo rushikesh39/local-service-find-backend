@@ -1,26 +1,26 @@
 const Service = require("../models/Services");
 const User = require("../models/User");
 const Booking = require("../models/Booking");
+const Review = require("../models/Review");
 const { cloudinary } = require("../config/cloudinary");
 
+/**
+ * ✅ Add Service
+ */
 const addService = async (req, res) => {
   try {
     const providerId = req.user.id;
-
     const { name, description, price, category, location } = req.body;
 
-    // ✅ Get image URL from Cloudinary
     const image = req.file?.path;
     const imagePublicId = req.file?.filename;
 
-    // Validation
     if (!name || !description || !price || !category || !location || !image) {
       return res
         .status(400)
         .json({ error: "All fields are required including image" });
     }
 
-    // Optional: Check if provider exists
     const providerExists = await User.findById(providerId);
     if (!providerExists) {
       return res.status(404).json({ error: "Service provider not found" });
@@ -32,7 +32,7 @@ const addService = async (req, res) => {
       description,
       price,
       category,
-      image, // ✅ Cloudinary image URL
+      image,
       imagePublicId,
       location,
     });
@@ -48,12 +48,13 @@ const addService = async (req, res) => {
   }
 };
 
+/**
+ * ✅ Get Services of a Provider
+ */
 const getServices = async (req, res) => {
   try {
     const { providerId } = req.params;
-
     const services = await Service.find({ providerId });
-
     res.status(200).json({ services });
   } catch (err) {
     console.error("Error fetching services:", err);
@@ -61,14 +62,14 @@ const getServices = async (req, res) => {
   }
 };
 
+/**
+ * ✅ Toggle Status
+ */
 const updateStatus = async (req, res) => {
   try {
     const { serviceId } = req.body;
-
     const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
-    }
+    if (!service) return res.status(404).json({ message: "Service not found" });
 
     if (!req.user || service.providerId.toString() !== req.user.id) {
       return res.status(403).json({ message: "Unauthorized" });
@@ -79,7 +80,7 @@ const updateStatus = async (req, res) => {
 
     return res.status(200).json({
       message: `Service status changed to '${service.status}'`,
-      status: service.status, 
+      status: service.status,
     });
   } catch (error) {
     console.error("Service status toggle failed:", error);
@@ -87,53 +88,78 @@ const updateStatus = async (req, res) => {
   }
 };
 
+/**
+ * ✅ Get Service By ID with Reviews & Recommendations
+ */
 const getServicesById = async (req, res) => {
   try {
     const { serviceId } = req.params;
-    const service = await Service.findById({ _id: serviceId });
+    const service = await Service.findById(serviceId);
 
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    res.status(200).json({ service });
+    // ✅ Fetch reviews (from Booking or separate Review model if exists)
+    const reviews = await Review.find({ providerId: service.providerId })
+      .populate("userId", "name email")
+      .select("rating reviewText reviewImages createdAt");
+    const filteredReviews = reviews
+      .filter((r) => r.userId && r.userId.name && r.userId.name.trim() !== "")
+      .slice(0, 10);
+    // ✅ Recommended services (same category, not same service)
+    const recommended = await Service.find({
+      category: service.category,
+      _id: { $ne: serviceId },
+      status: "active",
+    })
+      .limit(4)
+      .select("name category price image rating location");
+
+    res.status(200).json({
+      service,
+      filteredReviews,
+      recommended,
+    });
   } catch (err) {
     console.error("Error fetching service:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+/**
+ * ✅ List All Services
+ */
 const servicesList = async (req, res) => {
   try {
     const services = await Service.find();
-
     res.status(200).json({ services });
   } catch (err) {
     console.error("Error fetching services:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/**
+ * ✅ Popular Services (based on bookings)
+ */
 const getPopularServices = async (req, res) => {
   try {
     const limit = 4;
     const popular = await Booking.aggregate([
       {
-        $group: {
-          _id: "$serviceId",
-          count: { $sum: 1 },
-        },
+        $group: { _id: "$serviceId", count: { $sum: 1 } },
       },
       { $sort: { count: -1 } },
       { $limit: limit },
     ]);
 
-    // Extract service IDs
     const serviceIds = popular.map((item) => item._id);
+    const services = await Service.find({
+      _id: { $in: serviceIds },
+      status: "active",
+    });
 
-    // Fetch service details
-    const services = await Service.find({ _id: { $in: serviceIds }, status: "active" });
-
-    // Merge booking count with service info
     const result = popular.map((p) => {
       const service = services.find(
         (s) => s._id.toString() === p._id.toString()
@@ -159,10 +185,12 @@ const getPopularServices = async (req, res) => {
   }
 };
 
+/**
+ * ✅ Top Rated Services
+ */
 const getTopRatedServices = async (req, res) => {
   try {
     const limit = 4;
-
     const topRatedServices = await Service.find({
       rating: { $ne: null },
       status: "active",
@@ -173,10 +201,11 @@ const getTopRatedServices = async (req, res) => {
     res.status(200).json(topRatedServices);
   } catch (error) {
     console.error("Error fetching top-rated services:", error);
-    res.status(500).json({ message: "Server error while fetching top-rated services" });
+    res
+      .status(500)
+      .json({ message: "Server error while fetching top-rated services" });
   }
 };
-
 
 module.exports = {
   addService,
@@ -185,5 +214,5 @@ module.exports = {
   getServicesById,
   servicesList,
   getPopularServices,
-  getTopRatedServices
+  getTopRatedServices,
 };

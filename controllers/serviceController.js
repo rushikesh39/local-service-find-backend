@@ -4,9 +4,6 @@ const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const { cloudinary } = require("../config/cloudinary");
 
-/**
- * ✅ Add Service
- */
 const addService = async (req, res) => {
   try {
     const providerId = req.user.id;
@@ -48,9 +45,6 @@ const addService = async (req, res) => {
   }
 };
 
-/**
- * ✅ Get Services of a Provider
- */
 const getServices = async (req, res) => {
   try {
     const { providerId } = req.params;
@@ -62,9 +56,6 @@ const getServices = async (req, res) => {
   }
 };
 
-/**
- * ✅ Toggle Status
- */
 const updateStatus = async (req, res) => {
   try {
     const { serviceId } = req.body;
@@ -88,9 +79,6 @@ const updateStatus = async (req, res) => {
   }
 };
 
-/**
- * ✅ Get Service By ID with Reviews & Recommendations
- */
 const getServicesById = async (req, res) => {
   try {
     const { serviceId } = req.params;
@@ -100,14 +88,16 @@ const getServicesById = async (req, res) => {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    // ✅ Fetch reviews (from Booking or separate Review model if exists)
-    const reviews = await Review.find({serviceId})
+    const bookings = await Booking.find({ serviceId }).select("_id");
+    const bookingIds = bookings.map((b) => b._id);
+
+    const reviews = await Review.find({ bookingId: { $in: bookingIds } })
       .populate("userId", "name email")
       .select("rating reviewText reviewImages createdAt");
     const filteredReviews = reviews
       .filter((r) => r.userId && r.userId.name && r.userId.name.trim() !== "")
       .slice(0, 10);
-    // ✅ Recommended services (same category, not same service)
+
     const recommended = await Service.find({
       category: service.category,
       _id: { $ne: serviceId },
@@ -127,9 +117,6 @@ const getServicesById = async (req, res) => {
   }
 };
 
-/**
- * ✅ List All Services
- */
 const servicesList = async (req, res) => {
   try {
     const services = await Service.find();
@@ -140,9 +127,6 @@ const servicesList = async (req, res) => {
   }
 };
 
-/**
- * ✅ Popular Services (based on bookings)
- */
 const getPopularServices = async (req, res) => {
   try {
     const limit = 4;
@@ -185,9 +169,6 @@ const getPopularServices = async (req, res) => {
   }
 };
 
-/**
- * ✅ Top Rated Services
- */
 const getTopRatedServices = async (req, res) => {
   try {
     const limit = 4;

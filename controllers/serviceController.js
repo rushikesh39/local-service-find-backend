@@ -101,7 +101,7 @@ const getServicesById = async (req, res) => {
     }
 
     // ✅ Fetch reviews (from Booking or separate Review model if exists)
-    const reviews = await Review.find({ providerId: service.providerId })
+    const reviews = await Review.find({serviceId})
       .populate("userId", "name email")
       .select("rating reviewText reviewImages createdAt");
     const filteredReviews = reviews

@@ -2,9 +2,10 @@
 const Services = require("../models/Services");
 
 exports.search = async (req, res) => {
-  const { location, query } = req.query;
-  location = location ? location.trim() : "";
-  query = query ? query.trim() : "";
+  let { location, query } = req.query;
+  location = location?.trim();
+  query = query?.trim();
+  console.log("location",location,query)
   try {
     if (!location || !query) {
       return res.status(400).json({ error: "Location and query are required" });

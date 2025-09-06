@@ -10,13 +10,14 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String },
     isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "provider"], default: "user" },
-    location: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number]},
-      address: { type: String },
-    },
+    location: { type: String },
+    // location: {
+    //   type: { type: String, enum: ["Point"], default: "Point" },
+    //   coordinates: { type: [Number]},
+    //   address: { type: String },
+    // },
   },
   { timestamps: true }
 );
-userSchema.index({ location: "2dsphere" });
+// userSchema.index({ location: "2dsphere" });
 module.exports = mongoose.model("User", userSchema);

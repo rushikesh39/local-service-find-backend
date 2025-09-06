@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["user", "provider"], default: "user" },
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number], required: true },
+      coordinates: { type: [Number]},
       address: { type: String },
     },
   },

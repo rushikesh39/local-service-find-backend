@@ -8,15 +8,15 @@ const userSchema = new mongoose.Schema(
     facebookId: { type: String, unique: true, sparse: true },
     mobile: { type: String },
     passwordHash: { type: String },
-    address: { type: String, default: "" },
     isVerified: { type: Boolean, default: false },
-    role: {
-      type: String,
-      enum: ["user", "provider"],
-      default: "user",
+    role: { type: String, enum: ["user", "provider"], default: "user" },
+    location: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number], required: true },
+      address: { type: String },
     },
   },
   { timestamps: true }
 );
-
+userSchema.index({ location: "2dsphere" });
 module.exports = mongoose.model("User", userSchema);

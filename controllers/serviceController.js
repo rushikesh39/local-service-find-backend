@@ -7,15 +7,17 @@ const { cloudinary } = require("../config/cloudinary");
 const addService = async (req, res) => {
   try {
     const providerId = req.user.id;
-    const { name, description, price, category, location } = req.body;
+    let { name, description, price, category, address,coordinates} = req.body;
+    coordinates = JSON.parse(coordinates);
+    console.log(name, description, price, category, address,coordinates)
 
     const image = req.file?.path;
     const imagePublicId = req.file?.filename;
 
-    if (!name || !description || !price || !category || !location || !image) {
+    if (!name || !description || !price || !category || !address|| !coordinates|| !image) {
       return res
         .status(400)
-        .json({ error: "All fields are required including image" });
+        .json({ error: "All fields are required!" });
     }
 
     const providerExists = await User.findById(providerId);
@@ -31,7 +33,11 @@ const addService = async (req, res) => {
       category,
       image,
       imagePublicId,
-      location,
+      location: {
+        type: "Point",
+        coordinates: [parseFloat(coordinates[0]), parseFloat(coordinates[1])], 
+        address,
+      },
     });
 
     await newService.save();

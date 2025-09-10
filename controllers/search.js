@@ -1,4 +1,4 @@
-const Service = require("../models/Service");
+const Services = require("../models/Services");
 
 exports.searchNearby = async (req, res) => {
   try {
@@ -25,6 +25,39 @@ exports.searchNearby = async (req, res) => {
     res.json(services);
   } catch (error) {
     console.error("Nearby search failed:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.search = async (req, res) => {
+  const { location, query } = req.query;
+  try {
+    if (!location || !query) {
+      return res.status(400).json({ error: "Location and query are required" });
+    }
+
+    const providers = await Services.find({
+      $and: [
+        {
+          $or: [
+            { location: { $regex: location, $options: "i" } }, 
+            { "location.address": { $regex: location, $options: "i" } }, 
+          ],
+        },
+
+        {
+          $or: [
+            { name: { $regex: query, $options: "i" } },
+            { category: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json(providers);
+  } catch (err) {
+    console.error("Search error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

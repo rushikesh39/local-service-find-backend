@@ -8,7 +8,7 @@ const session = require("express-session");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/outhRoutes")
-// const searchRoutes=require("./routes/searchRoutes")
+const searchRoutes=require("./routes/searchRoutes")
 const serviceroutes=require("./routes/serviceRoutes")
 const bookingRoutes=require("./routes/bookingRoutes")
 const reviewRoutes=require("./routes/reviewRoutes")
@@ -29,7 +29,7 @@ app.use(passport.session());
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-// app.use("/api/providers", searchRoutes);
+app.use("/api/providers", searchRoutes);
 app.use("/api/services",serviceroutes);
 app.use("/api/booking",bookingRoutes)
 app.use("/api/reviews/",reviewRoutes)

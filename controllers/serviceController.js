@@ -55,6 +55,9 @@ const getServices = async (req, res) => {
   try {
     const { providerId } = req.params;
     const services = await Service.find({ providerId });
+    if(!services){
+      res.status(404).json({message:"No Service found"})
+    }
     res.status(200).json({ services });
   } catch (err) {
     console.error("Error fetching services:", err);
@@ -125,7 +128,7 @@ const getServicesById = async (req, res) => {
 
 const servicesList = async (req, res) => {
   try {
-    const services = await Service.find();
+    const services = await Service.find({ status: "active" });
     res.status(200).json({ services });
   } catch (err) {
     console.error("Error fetching services:", err);

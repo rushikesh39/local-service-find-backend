@@ -29,7 +29,7 @@ app.use(passport.session());
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/providers", searchRoutes);
+app.use("/api/search", searchRoutes);
 app.use("/api/services",serviceroutes);
 app.use("/api/booking",bookingRoutes)
 app.use("/api/reviews/",reviewRoutes)

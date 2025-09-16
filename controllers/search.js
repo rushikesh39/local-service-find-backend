@@ -1,63 +1,51 @@
 const Services = require("../models/Services");
 
-exports.searchNearby = async (req, res) => {
+exports.search = async (req, res) => {
   try {
-    const { lat, lng, radius = 5000, query } = req.query;
+    const { lat, lng, radius,  query } = req.query;
 
-    if (!lat || !lng) {
-      return res.status(400).json({ error: "Latitude and Longitude required" });
+    // Case 1: If user provided coordinates → nearby search
+    if (lat && lng && query) {
+      const services = await Services.find(
+        {
+          status: "active",
+          $text: { $search: query }, // ✅ text index search
+          location: {
+            $near: {
+              $geometry: {
+                type: "Point",
+                coordinates: [parseFloat(lng), parseFloat(lat)], // [lng, lat]
+              },
+              $maxDistance: parseInt(radius) || 10000, // default 10 km
+            },
+          },
+        },
+        {
+          score: { $meta: "textScore" }, // include relevance score
+        }
+      )
+        .sort({ score: { $meta: "textScore" } }) // sort by relevance
+        .populate("providerId", "name email mobile");
+
+      return res.json(services);
     }
 
-    const services = await Service.find({
-      category: { $regex: query, $options: "i" }, // match category or service type
-      status: "active", // only active services
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [parseFloat(lng), parseFloat(lat)],
-          },
-          $maxDistance: parseInt(radius), // meters
-        },
-      },
-    }).populate("providerId", "name email mobile"); // include provider info
-
-    res.json(services);
-  } catch (error) {
-    console.error("Nearby search failed:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-exports.search = async (req, res) => {
-  const { location, query } = req.query;
-  try {
-    if (!location || !query) {
-      return res.status(400).json({ error: "Location and query are required" });
+    // Case 2: If coordinates denied →  query search
+    if (!query) {
+      return res.status(400).json({ error: "Enter a service are required" });
     }
 
     const providers = await Services.find({
-      $and: [
-        {
-          $or: [
-            { location: { $regex: location, $options: "i" } }, 
-            { "location.address": { $regex: location, $options: "i" } }, 
-          ],
-        },
-
-        {
-          $or: [
-            { name: { $regex: query, $options: "i" } },
-            { category: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } },
-          ],
-        },
+      $or: [
+        { name: { $regex: query, $options: "i" } },
+        { category: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
       ],
     });
 
-    res.status(200).json(providers);
-  } catch (err) {
-    console.error("Search error:", err);
+    return res.status(200).json(providers);
+  } catch (error) {
+    console.error("Search failed:", error);
     res.status(500).json({ error: "Server error" });
   }
 };

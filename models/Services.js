@@ -4,7 +4,7 @@ const serviceSchema = new mongoose.Schema(
   {
     providerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", 
+      ref: "User",
       required: true,
     },
     name: { type: String, required: true },
@@ -20,7 +20,7 @@ const serviceSchema = new mongoose.Schema(
         default: "Point",
       },
       coordinates: {
-        type: [Number], 
+        type: [Number], // [longitude, latitude]
       },
       address: { type: String },
     },
@@ -30,6 +30,15 @@ const serviceSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// GeoSpatial index for nearby search
 serviceSchema.index({ location: "2dsphere" });
+
+// Text index for full-text search on name, category, description
+serviceSchema.index({
+  name: "text",
+  category: "text",
+  description: "text",
+});
 
 module.exports = mongoose.model("Service", serviceSchema);

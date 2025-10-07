@@ -1,87 +1,72 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const OTP=require("../models/OTP")
+const OTP = require("../models/OTP");
 const nodemailer = require("nodemailer");
 const transporter = require("../config/nodemail");
 const { use } = require("passport");
+const { sendSmsOtp } = require("../config/sms");
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All field required" });
+    const { name, mobile, email, password, role } = req.body;
+    if (!name || (!email && !mobile)) {
+      return res
+        .status(400)
+        .json({ message: "Name and either Email or Mobile are required." });
     }
-
-    const existingUser = await User.findOne({ email });
-
+    if (email && !password) {
+      return res
+        .status(400)
+        .json({ message: "Password is required when using email." });
+    }
+    const query = {};
+    if (email) query.email = email;
+    if (mobile) query.mobile = mobile;
+    const existingUser = await User.findOne(query);
+    
     if (existingUser) {
       if (!existingUser.isVerified) {
         return res.status(403).json({
-          message: "Email already registered but not verified. Please verify your email.",
+          message:
+            "User already registered but not verified. Please verify with OTP.",
           unverified: true,
           user: {
             _id: existingUser._id,
             email: existingUser.email,
+            mobile: existingUser.mobile,
             name: existingUser.name,
             role: existingUser.role,
           },
         });
       }
-      return res.status(400).json({ message: "Email already registered!" });
+      return res.status(400).json({ message: "User already registered!" });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-
+    // create user
+    const passwordHash = email ? await bcrypt.hash(password, 10) : undefined;
     const user = await User.create({
       name,
       email,
+      mobile,
       passwordHash,
       role: role || "user",
       isVerified: false,
     });
 
-    const token = jwt.sign(
-      { userId: user._id, email: user.email, name: user.name, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.status(201).json({
-      message: `${role === "provider" ? "Provider" : "User"} registered successfully`,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      token,
-    });
-  } catch (err) {
-    console.error("Registration error:", err);
-    res.status(500).json({ message:err });
-  }
-};
-
-// Send OTP
-const sendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Email is required" });
-
-    const existing = await OTP.findOne({ email });
-    if (existing) await OTP.deleteOne({ email });
-
+    // generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-    await OTP.create({ email, otp, otpExpires });
+    await OTP.create({ email, mobile, otp, otpExpires });
 
-    await transporter.sendMail({
-  to: email,
-  from: `"Locafy " <${process.env.EMAIL_USER}>`,
-  subject: "Verify Your Email - OTP Code",
-  html: `
+    // send OTP
+    if (email) {
+      await transporter.sendMail({
+        to: email,
+        from: `"Locafy " <${process.env.EMAIL_USER}>`,
+        subject: "Verify Your Email - OTP Code",
+        html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
       <div style="text-align: center;">
         <h2 style="color: #333;">🔐 Email Verification</h2>
@@ -95,35 +80,55 @@ const sendOtp = async (req, res) => {
       <hr style="margin: 30px 0;">
       <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
     </div>
-  `
-});
+  `,
+      });
+    }
+    if (mobile) {
+      await sendSmsOtp(mobile, otp);
+    }
 
-
-    res.status(200).json({ message: "OTP sent to email" });
+    res.status(201).json({
+      message: "User registered successfully. Please verify with OTP.",
+      userId: user._id,
+    });
   } catch (err) {
-    console.error("OTP send error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Registration error:", err);
+    res.status(500).json({ message: err.message });
   }
 };
 
 // Verify OTP
 const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    const otpEntry = await OTP.findOne({ email });
+    const { email, mobile, otp } = req.body;
 
-    if (!otpEntry) return res.status(404).json({ message: "OTP not found for this email" });
+    const query = email ? { email } : { mobile };
+    const otpEntry = await OTP.findOne(query);
+
+    if (!otpEntry) return res.status(404).json({ message: "OTP not found" });
     if (otpEntry.otp !== otp || otpEntry.otpExpires < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
- 
-    await User.findOneAndUpdate({ email }, { isVerified: true });
-    await OTP.deleteOne({ email });
 
-    const user = await User.findOne({ email });
-     await sendRegistrationMail(user.email, user.name);
-    res.status(200).json({ message: "Email verified successfully" });
-     
+    const user = await User.findOneAndUpdate(
+      query,
+      { isVerified: true },
+      { new: true }
+    );
+    await OTP.deleteOne(query);
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "15d" }
+    );
+
+    res.status(200).json({ message: "Verified successfully", token });
   } catch (error) {
     console.error("OTP verification error:", error);
     res.status(500).json({ message: "Server error while verifying OTP" });
@@ -156,7 +161,9 @@ const sendRegistrationMail = async (email, name) => {
         <div style="margin-top: 25px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
           <p style="font-size: 14px; color: #666; margin: 0;">
             Need help getting started? Visit our 
-            <a href="${process.env.FRONTEND_URL}/help" style="color: #007bff; text-decoration: none;">Help Center</a> 
+            <a href="${
+              process.env.FRONTEND_URL
+            }/help" style="color: #007bff; text-decoration: none;">Help Center</a> 
             or contact our support team.
           </p>
         </div>
@@ -185,12 +192,15 @@ const loginUser = async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     if (!user.isVerified) {
-      return res.status(403).json({ error: "Email not verified. Please verify your email before logging in." });
+      return res.status(403).json({
+        error:
+          "Email not verified. Please verify your email before logging in.",
+      });
     }
-    const {name,role } = user;
+    const { name, role } = user;
 
     const token = jwt.sign(
-      { userId: user._id, email: user.email,name:name,role:role },
+      { userId: user._id, email: user.email, name: name, role: role },
       process.env.JWT_SECRET,
       { expiresIn: "15d" }
     );
@@ -205,8 +215,10 @@ const loginUser = async (req, res) => {
 const contactUs = async (req, res) => {
   const { name, email, subject, message } = req.body;
 
-  if (!name || !email || !message||!subject) {
-    return res.status(400).json({ error: "Name, email, and message are required." });
+  if (!name || !email || !message || !subject) {
+    return res
+      .status(400)
+      .json({ error: "Name, email, and message are required." });
   }
 
   try {
@@ -233,5 +245,4 @@ const contactUs = async (req, res) => {
   }
 };
 
-
-module.exports = { registerUser, sendOtp, verifyOtp, loginUser,contactUs };
+module.exports = { registerUser, verifyOtp, loginUser, contactUs };

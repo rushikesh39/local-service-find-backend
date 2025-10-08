@@ -14,9 +14,7 @@ const bookingRoutes=require("./routes/bookingRoutes")
 const reviewRoutes=require("./routes/reviewRoutes")
 
 const app = express();
-app.use(cors({
-  origin:['http://localhost:5173', 'https://rushi-locafy.netlify.app']
-}));
+app.use(cors({origin:"*"}));
 app.use(express.json());
 
 app.use(session({

@@ -10,21 +10,27 @@ const { sendSmsOtp } = require("../config/sms");
 const registerUser = async (req, res) => {
   try {
     const { name, mobile, email, password, role } = req.body;
+
+    // Basic validation
     if (!name || (!email && !mobile)) {
       return res
         .status(400)
         .json({ message: "Name and either Email or Mobile are required." });
     }
+
     if (email && !password) {
       return res
         .status(400)
         .json({ message: "Password is required when using email." });
     }
+
+    // Check for existing user
     const query = {};
     if (email) query.email = email;
     if (mobile) query.mobile = mobile;
+
     const existingUser = await User.findOne(query);
-    
+
     if (existingUser) {
       if (!existingUser.isVerified) {
         return res.status(403).json({
@@ -43,8 +49,10 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already registered!" });
     }
 
-    // create user
+    // Hash password if email registration
     const passwordHash = email ? await bcrypt.hash(password, 10) : undefined;
+
+    // Create new user
     const user = await User.create({
       name,
       email,
@@ -54,42 +62,68 @@ const registerUser = async (req, res) => {
       isVerified: false,
     });
 
-    // generate OTP
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
     await OTP.create({ email, mobile, otp, otpExpires });
 
-    // send OTP
+    let otpStatus = { emailSent: false, smsSent: false, errors: [] };
+
+    // Send Email OTP (if applicable)
     if (email) {
-      await transporter.sendMail({
-        to: email,
-        from: `"Locafy " <${process.env.EMAIL_USER}>`,
-        subject: "Verify Your Email - OTP Code",
-        html: `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
-      <div style="text-align: center;">
-        <h2 style="color: #333;">🔐 Email Verification</h2>
-        <p style="font-size: 16px; color: #555;">Use the OTP below to verify your email address:</p>
-        <div style="margin: 20px auto; padding: 10px 20px; background-color: #ffffff; border: 2px dashed #4caf50; display: inline-block; border-radius: 5px;">
-          <p style="font-size: 24px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">${otp}</p>
-        </div>
-        <p style="color: #888;">This OTP is valid for <strong>5 minutes</strong>.</p>
-        <p style="font-size: 14px; color: #999;">If you didn’t request this, you can safely ignore this email.</p>
-      </div>
-      <hr style="margin: 30px 0;">
-      <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
-    </div>
-  `,
-      });
+      try {
+        await transporter.sendMail({
+          to: email,
+          from: `"Locafy" <${process.env.EMAIL_USER}>`,
+          subject: "Verify Your Email - OTP Code",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
+              <div style="text-align: center;">
+                <h2 style="color: #333;">🔐 Email Verification</h2>
+                <p style="font-size: 16px; color: #555;">Use the OTP below to verify your email address:</p>
+                <div style="margin: 20px auto; padding: 10px 20px; background-color: #ffffff; border: 2px dashed #4caf50; display: inline-block; border-radius: 5px;">
+                  <p style="font-size: 24px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">${otp}</p>
+                </div>
+                <p style="color: #888;">This OTP is valid for <strong>5 minutes</strong>.</p>
+                <p style="font-size: 14px; color: #999;">If you didn’t request this, you can safely ignore this email.</p>
+              </div>
+              <hr style="margin: 30px 0;">
+              <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
+            </div>
+          `,
+        });
+        otpStatus.emailSent = true;
+      } catch (error) {
+        console.error("⚠️ Email OTP Error:", error.message);
+        otpStatus.errors.push("Email OTP failed");
+      }
     }
+
+    // Send SMS OTP (if applicable)
     if (mobile) {
-      await sendSmsOtp(mobile, otp);
+      try {
+        const smsResult = await sendSmsOtp(mobile, otp);
+        if (!smsResult.success) throw new Error(smsResult.message);
+        otpStatus.smsSent = true;
+      } catch (error) {
+        console.error("⚠️ SMS OTP Error:", error.message);
+        otpStatus.errors.push("SMS OTP failed: " + error.message);
+      }
+    }
+
+    // Respond to frontend
+    let message = "User registered successfully.";
+    if (otpStatus.emailSent || otpStatus.smsSent) {
+      message += " Please verify with OTP.";
+    } else {
+      message += " ⚠️ But OTP could not be sent. Please try again later.";
     }
 
     res.status(201).json({
-      message: "User registered successfully. Please verify with OTP.",
+      message,
       userId: user._id,
+      otpStatus,
     });
   } catch (err) {
     console.error("Registration error:", err);

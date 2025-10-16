@@ -5,6 +5,7 @@ const otpSchema = new mongoose.Schema({
   mobile: { type: String },
   otp: { type: String, required: true },
   otpExpires: { type: Date, required: true },
+  attempts: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now, expires: 300 }
 
 });

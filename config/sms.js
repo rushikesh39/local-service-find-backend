@@ -9,10 +9,12 @@ export const sendSmsOtp = async (mobile, otp) => {
   try {
     const url = "https://www.fast2sms.com/dev/bulkV2"; // same endpoint works with route=otp
 
+    const message = `Your Locafy OTP is ${otp}. It is valid for 5 minutes.`;
     const data = {
-      route: "otp",
-      variables_values: otp,
+      route: "q",
       numbers: mobile,
+      message,
+      flash: 0,
     };
 
     const response = await axios.post(url, data, {
@@ -34,6 +36,9 @@ export const sendSmsOtp = async (mobile, otp) => {
       "⚠️ Fast2SMS OTP Error:",
       error.response?.data || error.message
     );
-    return { success: false, message: "Fast2SMS API error" };
+    return {
+      success: false,
+      message: error.response?.data?.message || "Fast2SMS API error",
+    };
   }
 };

@@ -337,7 +337,7 @@ const loginUser = async (req, res) => {
     // ✅ Case 1: Email login
     if (email) {
       const user = await User.findOne({ email });
-      if (!user) return res.status(400).json({ error: "Invalid credentials." });
+      if (!user) return res.status(400).json({ error: "User not found with this email." });
 
       const isMatch = await bcrypt.compare(password, user.passwordHash);
       if (!isMatch)

@@ -12,6 +12,7 @@ const searchRoutes=require("./routes/searchRoutes")
 const serviceroutes=require("./routes/serviceRoutes")
 const bookingRoutes=require("./routes/bookingRoutes")
 const reviewRoutes=require("./routes/reviewRoutes")
+const {connectDb}=require('./config')
 
 const app = express();
 app.use(cors({origin:"*"}));
@@ -36,9 +37,7 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome' });
 });
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.log("Error connecting to MongoDB:", err));
+connectDb()
 
 // Start server
 const PORT = process.env.PORT || 8000;

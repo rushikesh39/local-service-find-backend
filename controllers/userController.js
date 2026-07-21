@@ -1,10 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const OTP = require("../models/OTP");
-const transporter = require("../config/nodemail");
+const {OTP,User} = require("../models");
+const {transporter,sms} = require("../config");
 const { use } = require("passport");
-const { sendSmsOtp } = require("../config/sms");
 
 const registerUser = async (req, res) => {
   try {
@@ -127,7 +125,7 @@ const generateAndSendOtp = async ({ email, mobile }) => {
 
     // Send SMS OTP (if applicable)
     if (mobile) {
-      const smsResult = await sendSmsOtp(mobile, otp);
+      const smsResult = await sms.sendOtp(mobile, otp);
 
       if (!smsResult.success) {
         console.warn("❌ SMS OTP not sent:", smsResult.message);

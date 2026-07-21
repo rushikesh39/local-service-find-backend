@@ -3,13 +3,10 @@ const router = express.Router();
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 
-const {
-  forgotPassword,
-  resetPassword,
-} = require("../controllers/outhController");
+const {outhController} = require("../controllers");
 
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
+router.post("/forgot-password", outhController.forgotPassword);
+router.post("/reset-password/:token", outhController.resetPassword);
 
 router.get(
   "/google",

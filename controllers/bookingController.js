@@ -1,7 +1,5 @@
-const Booking = require("../models/Booking");
-const Service = require("../models/Services");
-const User = require("../models/User");
-const transporter = require("../config/nodemail");
+const {User,Service,Booking} = require("../models/User");
+const {transporter} = require("../config");
 
 const sendBookingMail = async (
   email,

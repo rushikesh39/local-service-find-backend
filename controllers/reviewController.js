@@ -1,7 +1,5 @@
-const Review = require("../models/Review");
-const Booking = require("../models/Booking");
-const Services = require("../models/Services");
-const { cloudinary } = require("../config/cloudinary");
+const {Services,Booking,Review} = require("../models");
+const { cloudinary } = require("../config");
 
 const submitReview = async (req, res) => {
   let uploadedImagePublicId = null; // Track public ID to delete if needed

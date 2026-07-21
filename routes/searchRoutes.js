@@ -1,9 +1,9 @@
 // routes/providerRoutes.js
 const express = require("express");
 const router = express.Router();
-const { search } = require("../controllers/search");
+const { searchController } = require("../controllers");
 
-router.get("/", search); 
+router.get("/", searchController.search); 
 
 
 module.exports = router;

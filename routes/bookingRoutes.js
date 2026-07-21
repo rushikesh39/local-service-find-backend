@@ -1,21 +1,33 @@
 // routes/bookingRoutes.js
 const express = require("express");
 const router = express.Router();
-const {
-  bookService,
-  getBookingsForProvider,
-  updateBookingStatus,
-  todaysBooking,
-  getProviderDashboardStats,
-  getBookingsForUser
-} = require("../controllers/bookingController");
-const auth = require("../middleware/providerMiddleware");
-const authenticateProvider = require("../middleware/providerMiddleware");
+const { bookingController } = require("../controllers");
+const { authMiddleware } = require("../middleware");
 
-router.post("/book", auth, bookService);
-router.get("/provider/get-booking", authenticateProvider, getBookingsForProvider );
-router.get("/provider/todays-booking", authenticateProvider, todaysBooking);
-router.get("/provider/dashboard-starts", authenticateProvider, getProviderDashboardStats);
-router.get("/user/get-booking", auth, getBookingsForUser);
-router.patch("/provider/update-booking-status/", authenticateProvider, updateBookingStatus);
+router.post("/book", authMiddleware, bookingController.bookService);
+router.get(
+  "/provider/get-booking",
+  authMiddleware,
+  bookingController.getBookingsForProvider,
+);
+router.get(
+  "/provider/todays-booking",
+  authMiddleware,
+  bookingController.todaysBooking,
+);
+router.get(
+  "/provider/dashboard-starts",
+  authMiddleware,
+  bookingController.getProviderDashboardStats,
+);
+router.get(
+  "/user/get-booking",
+  authMiddleware,
+  bookingController.getBookingsForUser,
+);
+router.patch(
+  "/provider/update-booking-status/",
+  authMiddleware,
+  bookingController.updateBookingStatus,
+);
 module.exports = router;

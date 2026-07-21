@@ -1,8 +1,5 @@
-const Service = require("../models/Services");
-const User = require("../models/User");
-const Booking = require("../models/Booking");
-const Review = require("../models/Review");
-const { cloudinary } = require("../config/cloudinary");
+const {Review,Booking,User,Service} = require("../models");
+const { cloudinary } = require("../config");
 
 const addService = async (req, res) => {
   try {

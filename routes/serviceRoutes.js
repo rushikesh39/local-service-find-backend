@@ -1,14 +1,35 @@
 const express = require("express");
 const router = express.Router();
-const { addService, getServices, getServicesById, servicesList, getPopularServices ,updateStatus, getTopRatedServices} = require("../controllers/serviceController");
-const authenticateProvider = require("../middleware/providerMiddleware");
+const { servicesController } = require("../controllers");
+const { authMiddleware } = require("../middleware");
 const upload = require("../middleware/upload");
 
-router.get("/",servicesList);
-router.post("/add", authenticateProvider, upload.single("image"), addService);
-router.get("/provider/:providerId",authenticateProvider,getServices);
-router.get("/details/:serviceId",getServicesById);
-router.put("/update-status", authenticateProvider, updateStatus);
-router.get("/popular-services",getPopularServices);
-router.get("/top-rated-services",getTopRatedServices);
+router.get("/", servicesController.servicesList);
+router.post(
+  "/add",
+  authMiddleware,
+  upload.single("image"),
+  servicesController.addService,
+);
+router.get(
+  "/provider/:providerId",
+  authMiddleware,
+  servicesController.getServices,
+);
+router.get(
+  "/details/:serviceId",
+  authMiddleware,
+  servicesController.getServicesById,
+);
+router.put("/update-status", authMiddleware, servicesController.updateStatus);
+router.get(
+  "/popular-services",
+  authMiddleware,
+  servicesController.getPopularServices,
+);
+router.get(
+  "/top-rated-services",
+  authMiddleware,
+  servicesController.getTopRatedServices,
+);
 module.exports = router;

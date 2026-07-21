@@ -1,12 +1,12 @@
-const Services = require("../models/Services");
+const {Service} = require("../models");
 
-exports.search = async (req, res) => {
+async function search (req, res) {
   try {
     const { lat, lng, radius,  query } = req.query;
 
     // Case 1: If user provided coordinates → nearby search
     if (lat && lng && query) {
-      const services = await Services.find(
+      const services = await Service.find(
         {
           status: "active",
           $text: { $search: query }, // ✅ text index search
@@ -35,7 +35,7 @@ exports.search = async (req, res) => {
       return res.status(400).json({ error: "Enter a service are required" });
     }
 
-    const providers = await Services.find({
+    const providers = await Service.find({
       $or: [
         { name: { $regex: query, $options: "i" } },
         { category: { $regex: query, $options: "i" } },
@@ -49,3 +49,7 @@ exports.search = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+module.exports={
+  search
+}

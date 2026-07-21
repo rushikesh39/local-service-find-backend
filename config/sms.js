@@ -5,7 +5,7 @@ import axios from "axios";
  * @param {string} mobile - Recipient mobile number (10-digit)
  * @param {string} otp - OTP code to send
  */
-export const sendSmsOtp = async (mobile, otp) => {
+export const sendOtp = async (mobile, otp) => {
   try {
     const url = "https://www.fast2sms.com/dev/bulkV2"; // same endpoint works with route=otp
 

@@ -1,0 +1,9 @@
+module.exports={
+    bookingRoutes:require('./bookingRoutes.js'),
+    authRoutes:require('./authRoutes.js'),
+    reviewRoutes:require('./reviewRoutes.js'),
+    serviceRoutes:require('./serviceRoutes.js'),
+    searchRoutes:require('./searchRoutes.js'),
+    userRoutes:require('./userRoutes.js'),
+    contactRoutes:require('./contactRoutes.js'),
+}

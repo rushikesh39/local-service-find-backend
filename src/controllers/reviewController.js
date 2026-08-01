@@ -1,11 +1,11 @@
 const { Services, Booking, Review } = require("../models");
 const { cloudinary } = require("../config");
-const { validations } = require("../validations");
+const { reviewSchema } = require("../schema");
 const { ApiError, ApiResponse, asyncHandler } = require("../utils");
 const { HTTP } = require("../constant");
 
 const submitReview = asyncHandler(async (req, res) => {
-  const { data, error } = validations.review.safeParse(req.body);
+  const { data, error } = reviewSchema.review.safeParse(req.body);
   if (error) {
     throw new ApiError(
       HTTP.BAD_REQUEST,

@@ -1,7 +1,7 @@
 const { User, Service, Booking } = require("../models/User");
 const { transporter } = require("../config");
 const { ApiResponse, ApiError, asyncHandler } = require("../utils");
-const { bookingValidation } = require("../validations");
+const { bookingSchema } = require("../schema");
 const { HTTP } = require("../constant");
 
 const sendBookingMail = asyncHandler(
@@ -77,7 +77,7 @@ const sendBookingMail = asyncHandler(
 );
 
 const bookService = asyncHandler(async (req, res) => {
-  const { data, error } = bookingValidation.bookService.safeParse(req.body);
+  const { data, error } = bookingSchema.bookService.safeParse(req.body);
   if (error) {
     throw new ApiError(
       HTTP.BAD_REQUEST,
@@ -154,7 +154,7 @@ const getBookingsForUser = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(HTTP.OK, "User Bookings", bookings));
 });
 const updateBookingStatus = asyncHandler(async (req, res) => {
-  const { data, error } = bookingValidation.updateStatus.safeParse(req.body);
+  const { data, error } = bookingSchema.updateStatus.safeParse(req.body);
 
   if (error) {
     throw new ApiError(

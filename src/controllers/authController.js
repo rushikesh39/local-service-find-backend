@@ -4,12 +4,12 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const { transporter, sms } = require("../config");
 const { use } = require("passport");
-const { authValidation } = require("../validations");
+const { authSchema } = require("../schema");
 const { ApiResponse, ApiError, asyncHandler } = require("../utils");
 const { HTTP } = require("../constant");
 
 const register = asyncHandler(async (req, res) => {
-  const { data, error } = authValidation.register.safeParse(
+  const { data, error } = authSchema.register.safeParse(
     req.body,
   );
   if (error) {
@@ -103,7 +103,7 @@ const generateAndSendOtp =async ({ email, mobile,purpose }) => {
 };
 
 const resendOtp = asyncHandler(async (req, res) => {
-  const { data, error } = authValidation.sendOtp.safeParse(req.body);
+  const { data, error } = authSchema.sendOtp.safeParse(req.body);
   if (error) {
     throw new ApiError(
       HTTP.BAD_REQUEST,
@@ -153,7 +153,7 @@ const resendOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { data, error } = authValidation.verifyOtp.safeParse(req.body);
+  const { data, error } = authSchema.verifyOtp.safeParse(req.body);
   if (error) {
     throw new ApiError(
       HTTP.BAD_REQUEST,
@@ -253,7 +253,7 @@ const sendRegistrationMail = async (email, name) => {
 };
 
 const login = asyncHandler(async (req, res) => {
-  const { data, error } = authValidation.login.safeParse(
+  const { data, error } = authSchema.login.safeParse(
     req.body,
   );
   if (error) {

@@ -20,10 +20,22 @@ const register = z
       .optional()
       .or(z.literal("")),
   })
-  .refine((data) => data.email.trim() !== "" || data.mobile.trim() !== "", {
-    message: "Email or mobile number is required",
-    path: ["email"],
-  });
+ .superRefine((data, ctx) => {
+        const email = data.email?.trim() || "";
+        const mobile = data.mobile?.trim() || "";
+
+        if (!email && !mobile) {
+            ctx.addIssue({
+                message: "Email is required",
+                path: ["email"],
+            });
+
+            ctx.addIssue({
+                message: "Mobile Number is required",
+                path: ["mobile"],
+            });
+        }
+    });
 
 const login = z
   .object({
@@ -41,10 +53,22 @@ const login = z
       .optional()
       .or(z.literal("")),
   })
-  .refine((data) => data.email.trim() !== "" || data.mobile.trim() !== "", {
-    message: "Email or mobile number is required",
-    path: ["email"],
-  });
+  .superRefine((data, ctx) => {
+        const email = data.email?.trim() || "";
+        const mobile = data.mobile?.trim() || "";
+
+        if (!email && !mobile) {
+            ctx.addIssue({
+                message: "Email is required",
+                path: ["email"],
+            });
+
+            ctx.addIssue({
+                message: "Mobile Number is required",
+                path: ["mobile"],
+            });
+        }
+    });
 
 const verifyOtp = z.object({
   mobile: z

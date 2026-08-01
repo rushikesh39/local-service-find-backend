@@ -1,11 +1,11 @@
 const { Review, Booking, Service } = require("../models");
 const { HTTP } = require("../constant");
-const { serviceValidation } = require("../validations");
+const { serviceSchema } = require("../schema");
 const { ApiError, ApiResponse, asyncHandler } = require("../utils");
 const { truncates } = require("bcryptjs");
 
 const addService = asyncHandler(async (req, res) => {
-  const { data, error } = serviceValidation.add.safeParse(req.body);
+  const { data, error } = serviceSchema.add.safeParse(req.body);
   if (error) {
     throw new ApiError(
       HTTP.BAD_REQUEST,

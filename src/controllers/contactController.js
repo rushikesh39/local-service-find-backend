@@ -1,10 +1,10 @@
 const { transporter} = require("../config");
 const { HTTP } = require("../constant");
-const { validations } = require("../validations");
+const { contactSchema } = require("../schema");
 const {ApiError,ApiResponse,asyncHandler}=require("../utils");
 
 const contactUs = asyncHandler(async (req, res) => {
-  const {data, error}=validations.contactValidation.safeParse(req.body);
+  const {data, error}=contactSchema.contact.safeParse(req.body);
   if(error){
     throw new ApiError(HTTP.FORBIDDEN,"Contact Form validation Failed", error.flatten().fieldErrors)
   }

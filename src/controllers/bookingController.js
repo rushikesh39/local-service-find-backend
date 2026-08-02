@@ -1,6 +1,11 @@
 const { User, Service, Booking } = require("../models/User");
 const { transporter } = require("../config");
-const { ApiResponse, ApiError, asyncHandler } = require("../utils");
+const {
+  ApiResponse,
+  ApiError,
+  asyncHandler,
+  formatZodErrors,
+} = require("../utils");
 const { bookingSchema } = require("../schema");
 const { HTTP } = require("../constant");
 
@@ -82,7 +87,7 @@ const bookService = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form Validation Failed",
-      error.flatten().fieldErrors,
+      formatZodErrors(error),
     );
   }
   const { serviceId, name, mobile, scheduledDate, address, notes } = data;
@@ -160,7 +165,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Invalid data",
-      error.flatten().fieldErrors,
+      formatZodErrors(error),
     );
   }
 
@@ -239,24 +244,24 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
 });
 
 const todaysBooking = asyncHandler(async (req, res) => {
-    const providerId = req.user.id;
+  const providerId = req.user.id;
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
 
-    const bookings = await Booking.find({
-      providerId,
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-    })
-      .populate("userId", "name email mobile")
-      .populate("serviceId", "name category")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(new ApiResponse(HTTP.Ok,"Bookings",bookings));
+  const bookings = await Booking.find({
+    providerId,
+    createdAt: { $gte: startOfDay, $lte: endOfDay },
   })
+    .populate("userId", "name email mobile")
+    .populate("serviceId", "name category")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(new ApiResponse(HTTP.Ok, "Bookings", bookings));
+});
 
 const getProviderDashboardStats = asyncHandler(async (req, res) => {
   const providerId = new mongoose.Types.ObjectId(req.user.id);
@@ -377,7 +382,7 @@ const getProviderDashboardStats = asyncHandler(async (req, res) => {
     },
   ]);
 
-  res.status(200).json(new ApiResponse(HTTP.Ok,"Dashboard Stats", stats));
+  res.status(200).json(new ApiResponse(HTTP.Ok, "Dashboard Stats", stats));
 });
 
 module.exports = {

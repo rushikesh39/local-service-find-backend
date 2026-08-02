@@ -1,7 +1,7 @@
 const { Review, Booking, Service } = require("../models");
 const { HTTP } = require("../constant");
 const { serviceSchema } = require("../schema");
-const { ApiError, ApiResponse, asyncHandler } = require("../utils");
+const { ApiError, ApiResponse, asyncHandler,formatZodErrors } = require("../utils");
 const { truncates } = require("bcryptjs");
 
 const addService = asyncHandler(async (req, res) => {
@@ -10,7 +10,7 @@ const addService = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form validation failed",
-      error.flatten().fieldErrors,
+      formatZodErrors(error)
     );
   }
   let { name, description, price, category, address, lat, lng } = data;

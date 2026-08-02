@@ -1,7 +1,12 @@
 const { Services, Booking, Review } = require("../models");
 const { cloudinary } = require("../config");
 const { reviewSchema } = require("../schema");
-const { ApiError, ApiResponse, asyncHandler } = require("../utils");
+const {
+  ApiError,
+  ApiResponse,
+  asyncHandler,
+  formatZodErrors,
+} = require("../utils");
 const { HTTP } = require("../constant");
 
 const submitReview = asyncHandler(async (req, res) => {
@@ -10,7 +15,7 @@ const submitReview = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Review Data Validation Failed",
-      error.flatten().fieldErrors,
+      formatZodErrors(error),
     );
   }
   const { rating, reviewText, bookingId } = data;

@@ -5,7 +5,7 @@ const nodemailer = require("nodemailer");
 const { transporter, sms } = require("../config");
 const { use } = require("passport");
 const { authSchema } = require("../schema");
-const { ApiResponse, ApiError, asyncHandler } = require("../utils");
+const { ApiResponse, ApiError, asyncHandler, formatZodErrors } = require("../utils");
 const { HTTP } = require("../constant");
 
 const register = asyncHandler(async (req, res) => {
@@ -16,7 +16,7 @@ const register = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form Validation Failed!",
-      error.flatten().fieldErrors,
+      formatZodErrors(error)
     );
   }
 
@@ -108,7 +108,7 @@ const resendOtp = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form Validation Failed",
-      error.flatten().fieldErrors,
+      formatZodErrors(error)
     );
   }
   const {email, mobile}=data;
@@ -158,7 +158,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form Validation Failed",
-      error.flatten().fieldErrors,
+     formatZodErrors(error)
     );
   }
 const {email, mobile, otp}=data;
@@ -260,7 +260,7 @@ const login = asyncHandler(async (req, res) => {
     throw new ApiResponse(
       HTTP.BAD_REQUEST,
       "Form validation failed",
-      error.flatten().fieldErrors,
+      formatZodErrors(error)
     );
   }
   const { email, mobile } = data;

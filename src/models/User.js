@@ -11,12 +11,14 @@ const userSchema = new mongoose.Schema(
     
     role: { type: String, enum: ["user", "provider","admin"], default: "user" },
     location: {
-      type: { type: String, enum: ["Point"] },
-      coordinates: { type: [Number]},
+      type: { type: String, enum: ["Point"], default: undefined },
+      coordinates: { type: [Number], default: undefined },
       address: { type: String },
     },
     isActive:{type:Boolean,default:true}
   },
   { timestamps: true }
 );
+
+userSchema.index({ location: "2dsphere" }, { sparse: true });
 module.exports =mongoose.models.User|| mongoose.model("User", userSchema);

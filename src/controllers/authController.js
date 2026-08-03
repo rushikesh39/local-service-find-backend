@@ -20,7 +20,7 @@ const register = asyncHandler(async (req, res) => {
     );
   }
 
-  const { name, email, mobile} = data;
+  const { name, email, mobile } = data;
   const query = email ? { email } : { mobile };
   const existingUser = await User.findOne(query);
 
@@ -31,8 +31,8 @@ const register = asyncHandler(async (req, res) => {
 
   // Case 2: Already registered but not verified
   if (existingUser && !existingUser.isVerified) {
-    
-    const otpResponse = await generateAndSendOtp({ email, mobile,purpose:"register" });
+
+    const otpResponse = await generateAndSendOtp({ email, mobile, purpose: "register" });
 
     return res
       .status(HTTP.OK)
@@ -46,11 +46,11 @@ const register = asyncHandler(async (req, res) => {
     name,
     email,
     mobile,
-    role:"user",
+    role: "user",
     isVerified: false,
   });
 
-  const otpResponse = await generateAndSendOtp({ email, mobile, purpose:"register" });
+  const otpResponse = await generateAndSendOtp({ email, mobile, purpose: "register" });
 
 
   return res
@@ -58,7 +58,7 @@ const register = asyncHandler(async (req, res) => {
     .json(new ApiResponse(HTTP.CREATED, "User Created successfully. Please Verify OTP"));
 });
 
-const generateAndSendOtp =async ({ email, mobile,purpose }) => {
+const generateAndSendOtp = async ({ email, mobile, purpose }) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -66,15 +66,16 @@ const generateAndSendOtp =async ({ email, mobile,purpose }) => {
   await OTP.deleteMany({ $or: [{ email }, { mobile }] });
 
   // Save new OTP
-  await OTP.create({ email, mobile, otp, otpExpires,purpose });
+  await OTP.create({ email, mobile, otp, otpExpires, purpose });
 
-  // send Email OTP
+  // Send Email OTP in background without blocking response
   if (email) {
-    await transporter.sendMail({
-      to: email,
-      from: `"Locafy " <${process.env.EMAIL_USER}>`,
-      subject: "Verify Your Email - OTP Code",
-      html: `
+    transporter
+      .sendMail({
+        to: email,
+        from: `"Locafy " <${process.env.EMAIL_USER}>`,
+        subject: "Verify Your Email - OTP Code",
+        html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; border: 1px solid #ddd; background-color: #f9f9f9;">
                 <div style="text-align: center;">
                     <h2 style="color: #333;">🔐 Email Verification</h2>
@@ -89,17 +90,18 @@ const generateAndSendOtp =async ({ email, mobile,purpose }) => {
               <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
            </div>
   `,
-    });
+      })
+      .catch((err) => console.error("Email send failed:", err));
   }
 
-  // send SMS OTP
+  // Send SMS OTP in background without blocking response
   if (mobile) {
-    const smsResult = await sms.sendOtp(mobile, otp);
-
-    if (!smsResult.success) {
-      throw new ApiError(HTTP.INTERNAL_SERVER_ERROR, "Failed to send OTP");
-    }
+    sms
+      .sendOtp(mobile, otp)
+      .catch((err) => console.error("SMS send failed:", err));
   }
+
+  return { success: true };
 };
 
 const resendOtp = asyncHandler(async (req, res) => {
@@ -111,7 +113,7 @@ const resendOtp = asyncHandler(async (req, res) => {
       formatZodErrors(error)
     );
   }
-  const {email, mobile}=data;
+  const { email, mobile } = data;
   const query = email ? { email } : { mobile };
   const user = await User.findOne(query);
 
@@ -158,10 +160,10 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new ApiError(
       HTTP.BAD_REQUEST,
       "Form Validation Failed",
-     formatZodErrors(error)
+      formatZodErrors(error)
     );
   }
-const {email, mobile, otp}=data;
+  const { email, mobile, otp } = data;
   const query = email ? { email } : { mobile };
   const otpEntry = await OTP.findOne(query);
 
@@ -192,21 +194,23 @@ const {email, mobile, otp}=data;
     { isVerified: true },
     { new: true },
   );
-  if(email && otpEntry.purpose==="register"){
-  await sendRegistrationMail(email,user.name,)
+  if (email && otpEntry.purpose === "register") {
+    sendRegistrationMail(email, user.name).catch((err) =>
+      console.error("Welcome email send failed:", err)
+    );
   }
   req.session.user = {
     id: user._id
   };
-  if(otpEntry.purpose==="login"){
+  if (otpEntry.purpose === "login") {
     return res
-    .status(HTTP.OK)
-    .json(new ApiResponse(HTTP.OK, "Login Sucessfully"));
+      .status(HTTP.OK)
+      .json(new ApiResponse(HTTP.OK, "Login Sucessfully"));
   }
-  if(otpEntry.purpose==="register"){
+  if (otpEntry.purpose === "register") {
     return res
-    .status(HTTP.OK)
-    .json(new ApiResponse(HTTP.OK, "Register Sucessfully"));
+      .status(HTTP.OK)
+      .json(new ApiResponse(HTTP.OK, "Register Sucessfully"));
   }
 });
 
@@ -235,9 +239,8 @@ const sendRegistrationMail = async (email, name) => {
         <div style="margin-top: 25px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
           <p style="font-size: 14px; color: #666; margin: 0;">
             Need help getting started? Visit our 
-            <a href="${
-              process.env.FRONTEND_URL
-            }/help" style="color: #007bff; text-decoration: none;">Help Center</a> 
+            <a href="${process.env.FRONTEND_URL
+      }/help" style="color: #007bff; text-decoration: none;">Help Center</a> 
             or contact our support team.
           </p>
         </div>
@@ -264,18 +267,18 @@ const login = asyncHandler(async (req, res) => {
     );
   }
   const { email, mobile } = data;
-  const query=email?{email}:{mobile}
- 
-    const user = await User.findOne(query);
-    if (!user) {
-      throw new ApiError(HTTP.BAD_REQUEST, "User not found.");
-    }
-    const otpResponse = await generateAndSendOtp({ email, mobile ,purpose:"login" });
+  const query = email ? { email } : { mobile }
 
-       return res
-      .status(HTTP.OK)
-      .json(new ApiResponse(HTTP.OK, "OTP sent successfully. Please verify to login."));
-  
+  const user = await User.findOne(query);
+  if (!user) {
+    throw new ApiError(HTTP.BAD_REQUEST, "User not found.");
+  }
+  const otpResponse = await generateAndSendOtp({ email, mobile, purpose: "login" });
+
+  return res
+    .status(HTTP.OK)
+    .json(new ApiResponse(HTTP.OK, "OTP sent successfully. Please verify to login."));
+
 });
 const socialLoginCallback = asyncHandler(async (req, res, next) => {
   req.session.user = {

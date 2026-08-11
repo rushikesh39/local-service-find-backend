@@ -1,7 +1,12 @@
 const mongoose=require("mongoose")
 
  async function connectDb (){
+    if (mongoose.connection.readyState === 1) {
+      console.log("Database already connected");
+      return mongoose.connection;
+    }
     try{
+        
         const url=process.env.MONGO_URI;
         if(!url){
             console.log("Connection url not found")

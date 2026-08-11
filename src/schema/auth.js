@@ -85,7 +85,7 @@ const verifyOtp = z.object({
     .optional()
     .or(z.literal("")),
     otp:z.string().trim().min(6,"Invalid OTP")
-}).refine((data) => data.email.trim() !== "" || data.mobile.trim() !== "", {
+}).refine((data) => (data.email||"").trim() !== "" || (data.mobile||"").trim() !== "", {
     message: "Email or mobile number is required",
     path: ["email"],
   });

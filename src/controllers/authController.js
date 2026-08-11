@@ -1,9 +1,5 @@
 const { User, OTP } = require("../models");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
 const { transporter, sms } = require("../config");
-const { use } = require("passport");
 const { authSchema } = require("../schema");
 const { ApiResponse, ApiError, asyncHandler, formatZodErrors } = require("../utils");
 const { HTTP } = require("../constant");
@@ -62,16 +58,16 @@ const generateAndSendOtp = async ({ email, mobile, purpose }) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-  // Delete old OTPs for same user
+  // Delete old OTPs then save new OTP
   await OTP.deleteMany({ $or: [{ email }, { mobile }] });
-
-  // Save new OTP
   await OTP.create({ email, mobile, otp, otpExpires, purpose });
 
-  // Send Email OTP in background without blocking response
+  // Send Email and SMS OTP in parallel (both awaited for reliable delivery)
+  const tasks = [];
+
   if (email) {
-    transporter
-      .sendMail({
+    tasks.push(
+      transporter.sendMail({
         to: email,
         from: `"Locafy " <${process.env.EMAIL_USER}>`,
         subject: "Verify Your Email - OTP Code",
@@ -84,22 +80,31 @@ const generateAndSendOtp = async ({ email, mobile, purpose }) => {
                         <p style="font-size: 24px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">${otp}</p>
                       </div>
                   <p style="color: #888;">This OTP is valid for <strong>5 minutes</strong>.</p>
-                  <p style="font-size: 14px; color: #999;">If you didn’t request this, you can safely ignore this email.</p>
+                  <p style="font-size: 14px; color: #999;">If you didn't request this, you can safely ignore this email.</p>
              </div>
               <hr style="margin: 30px 0;">
               <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Locafy. All rights reserved.</p>
            </div>
   `,
+      }).catch((err) => {
+        console.error("Email send failed:", err);
+        throw new ApiError(HTTP.INTERNAL_SERVER_ERROR, "Failed to send OTP email");
       })
-      .catch((err) => console.error("Email send failed:", err));
+    );
   }
 
-  // Send SMS OTP in background without blocking response
   if (mobile) {
-    sms
-      .sendOtp(mobile, otp)
-      .catch((err) => console.error("SMS send failed:", err));
+    tasks.push(
+      sms.sendOtp(mobile, otp).then((smsResult) => {
+        if (!smsResult.success) {
+          throw new ApiError(HTTP.INTERNAL_SERVER_ERROR, "Failed to send OTP");
+        }
+      })
+    );
   }
+
+  // Wait for all notifications to complete in parallel
+  await Promise.all(tasks);
 
   return { success: true };
 };
@@ -131,8 +136,7 @@ const resendOtp = asyncHandler(async (req, res) => {
     const timeDiff =
       (Date.now() - new Date(existingOtp.createdAt).getTime()) / 1000;
 
-    // ✅ If OTP was created less than 2 minutes ago → block resend
-    if (timeDiff < 120) {
+    if (timeDiff < 30) {
       const waitTime = Math.ceil(120 - timeDiff);
       throw new ApiError(HTTP.TO_MANNY_REQUEST, "Try after some Time");
     }
@@ -195,9 +199,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
     { new: true },
   );
   if (email && otpEntry.purpose === "register") {
-    sendRegistrationMail(email, user.name).catch((err) =>
-      console.error("Welcome email send failed:", err)
-    );
+    await sendRegistrationMail(email, user.name,)
   }
   req.session.user = {
     id: user._id

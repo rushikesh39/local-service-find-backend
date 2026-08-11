@@ -1,4 +1,4 @@
- const formatZodErrors = (error) => {
+const formatZodErrors = (error) => {
     const errors = {};
 
     error.issues.forEach((issue) => {
@@ -11,6 +11,4 @@
 
     return errors;
 };
-module.exports={
-    formatZodErrors
-}
+module.exports = formatZodErrors;

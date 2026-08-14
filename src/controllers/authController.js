@@ -118,7 +118,7 @@ const resendOtp = asyncHandler(async (req, res) => {
       formatZodErrors(error)
     );
   }
-  const { email, mobile } = data;
+  const { email, mobile, purpose } = data;
   const query = email ? { email } : { mobile };
   const user = await User.findOne(query);
 
@@ -146,7 +146,7 @@ const resendOtp = asyncHandler(async (req, res) => {
   }
 
   // ✅ Generate and send a new OTP
-  const otpResponse = await generateAndSendOtp({ email, mobile });
+  const otpResponse = await generateAndSendOtp({ email, mobile, purpose });
 
   if (!otpResponse.success) {
     throw new ApiError(
@@ -199,7 +199,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
     { new: true },
   );
   if (email && otpEntry.purpose === "register") {
-    await sendRegistrationMail(email, user.name,)
+    sendRegistrationMail(email, user.name)
+
+    return res
+      .status(HTTP.OK)
+      .json(new ApiResponse(HTTP.OK, "Register Sucessfully"));
   }
   req.session.user = {
     id: user._id
@@ -208,11 +212,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
     return res
       .status(HTTP.OK)
       .json(new ApiResponse(HTTP.OK, "Login Sucessfully"));
-  }
-  if (otpEntry.purpose === "register") {
-    return res
-      .status(HTTP.OK)
-      .json(new ApiResponse(HTTP.OK, "Register Sucessfully"));
+  }else if(!otpEntry.purpose){
+    throw new ApiError(HTTP.BAD_REQUEST,"Purpose Not defind")
   }
 });
 

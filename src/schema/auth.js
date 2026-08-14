@@ -104,6 +104,7 @@ const verifyOtp = z.object({
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid Email")
     .optional()
     .or(z.literal("")),
+    purpose:z.enum(["login","register"])
 }).refine((data) => data.email.trim() !== "" || data.mobile.trim() !== "", {
     message: "Email or mobile number is required",
     path: ["email"],

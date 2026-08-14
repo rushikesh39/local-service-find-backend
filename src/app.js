@@ -17,14 +17,14 @@ const {
   contactRoutes,
 } = require("./routes");
 
-const { connectDb,authSession } = require("./config");
-const {errorHandler}=require('./middleware')
+const { connectDb, authSession } = require("./config");
+const { errorHandler } = require("./middleware");
 
 const app = express();
-app.use(cors({ origin: "*"}));
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 
-app.use(authSession)
+app.use(authSession);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -35,7 +35,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/booking", bookingRoutes);
 app.use("/api/reviews/", reviewRoutes);
-app.use("/api/contact",contactRoutes)
+app.use("/api/contact", contactRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome" });
@@ -44,12 +44,12 @@ app.get("/", (req, res) => {
 // Connect to MongoDB
 connectDb();
 
-// Start server
+// Start server : migrate to vercel so no need to start server
 const PORT = process.env.PORT || 8000;
 // app.listen(PORT, () => {
 //   console.log(`Server running on port ${PORT}`);
 // });
 
-app.use(errorHandler)
+app.use(errorHandler);
 
-module.exports=app
+module.exports = app;

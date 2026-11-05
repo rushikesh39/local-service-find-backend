@@ -2,15 +2,17 @@ const express = require("express");
 const router = express.Router();
 const { servicesController } = require("../controllers");
 const { authMiddleware } = require("../middleware");
-const {upload} = require("../middleware");
+const { upload, authorize } = require("../middleware");
 
 router.get("/", servicesController.getServices);
 router.post(
   "/add",
   authMiddleware,
+  authorize("services:create"),
   upload.single("image"),
   servicesController.addService,
 );
+router.put("/update-status", authMiddleware,authorize("services:update"), servicesController.updateStatus);
 router.get(
   "/provider/:providerId",
   authMiddleware,
@@ -18,18 +20,14 @@ router.get(
 );
 router.get(
   "/details/:serviceId",
-  authMiddleware,
   servicesController.getServicesById,
 );
-router.put("/update-status", authMiddleware, servicesController.updateStatus);
 router.get(
   "/popular-services",
-  authMiddleware,
   servicesController.getPopularServices,
 );
 router.get(
   "/top-rated-services",
-  authMiddleware,
   servicesController.getTopRatedServices,
 );
 module.exports = router;

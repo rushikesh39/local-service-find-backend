@@ -1,4 +1,4 @@
-const { User, OTP } = require("../models");
+const { User, OTP, Role } = require("../models");
 const { transporter, sms } = require("../config");
 const { authSchema } = require("../schema");
 const { ApiResponse, ApiError, asyncHandler, formatZodErrors } = require("../utils");
@@ -37,12 +37,15 @@ const register = asyncHandler(async (req, res) => {
       );
   }
 
+  const userRole = await Role.findOne({ name: "user" }).select("_id")
+  console.log(userRole)
+
   // Case 3: New user registration
   const user = await User.create({
     name,
     email,
     mobile,
-    role: "user",
+    roleId: userRole._id,
     isVerified: false,
   });
 
@@ -198,6 +201,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
     { isVerified: true },
     { new: true },
   );
+    req.session.user = {
+    id: user._id
+  };
   if (email && otpEntry.purpose === "register") {
     sendRegistrationMail(email, user.name)
 
@@ -205,15 +211,12 @@ const verifyOtp = asyncHandler(async (req, res) => {
       .status(HTTP.OK)
       .json(new ApiResponse(HTTP.OK, "Register Sucessfully"));
   }
-  req.session.user = {
-    id: user._id
-  };
   if (otpEntry.purpose === "login") {
     return res
       .status(HTTP.OK)
       .json(new ApiResponse(HTTP.OK, "Login Sucessfully"));
-  }else if(!otpEntry.purpose){
-    throw new ApiError(HTTP.BAD_REQUEST,"Purpose Not defind")
+  } else if (!otpEntry.purpose) {
+    throw new ApiError(HTTP.BAD_REQUEST, "Purpose Not defind")
   }
 });
 
@@ -276,7 +279,7 @@ const login = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(HTTP.BAD_REQUEST, "User not found.");
   }
-  const otpResponse = await generateAndSendOtp({ email, mobile, purpose: "login" });
+  await generateAndSendOtp({ email, mobile, purpose: "login" });
 
   return res
     .status(HTTP.OK)

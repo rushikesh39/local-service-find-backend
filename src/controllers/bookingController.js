@@ -50,25 +50,22 @@ const sendBookingMail = asyncHandler(
             </p>
             <div style="margin: 20px auto; padding: 12px 24px; background-color: #f9f9f9; border-radius: 6px; text-align: left;">
               <p style="margin: 6px 0;"><strong>📅 Scheduled Date:</strong> ${new Date(
-                scheduledDate,
-              ).toLocaleString()}</p>
+        scheduledDate,
+      ).toLocaleString()}</p>
               <p style="margin: 6px 0;"><strong>📍 Address:</strong> ${address}</p>
             </div>
-            ${
-              status === "confirmed"
-                ? `<p style="font-size: 16px; color: #28a745;">Please be ready on the scheduled date. Our provider will reach you as per your booking time.</p>`
-                : ""
-            }
-            ${
-              status === "cancelled"
-                ? `<p style="font-size: 16px; color: #e74c3c;">Your booking has been cancelled. If this was a mistake, please rebook the service.</p>`
-                : ""
-            }
-            ${
-              status === "completed"
-                ? `<p style="font-size: 16px; color: #3498db;">Thank you for using Locafy. We hope you had a great experience! </p>`
-                : ""
-            }
+            ${status === "confirmed"
+          ? `<p style="font-size: 16px; color: #28a745;">Please be ready on the scheduled date. Our provider will reach you as per your booking time.</p>`
+          : ""
+        }
+            ${status === "cancelled"
+          ? `<p style="font-size: 16px; color: #e74c3c;">Your booking has been cancelled. If this was a mistake, please rebook the service.</p>`
+          : ""
+        }
+            ${status === "completed"
+          ? `<p style="font-size: 16px; color: #3498db;">Thank you for using Locafy. We hope you had a great experience! </p>`
+          : ""
+        }
             <p style="margin-top: 20px; font-size: 14px; color: #888;">If you have any questions, reply to this email or contact our support team.</p>
           </div>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">

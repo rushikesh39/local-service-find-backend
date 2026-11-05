@@ -46,9 +46,9 @@ connectDb();
 
 // Start server : migrate to vercel so no need to start server
 const PORT = process.env.PORT || 8000;
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 app.use(errorHandler);
 

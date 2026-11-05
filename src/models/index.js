@@ -3,5 +3,7 @@ module.exports={
     OTP:require('./OTP.js'),
     Review:require('./Review.js'),
     Service:require('./Service.js'),
-    User:require('./User.js')
+    User:require('./User.js'),
+    Role:require('./Role.js'),
+    Permission:require('./Permission.js')
 }

@@ -1,7 +1,7 @@
 const { Review, Booking, Service } = require("../models");
 const { HTTP } = require("../constant");
 const { serviceSchema } = require("../schema");
-const { ApiError, ApiResponse, asyncHandler,formatZodErrors } = require("../utils");
+const { ApiError, ApiResponse, asyncHandler, formatZodErrors } = require("../utils");
 const { truncates } = require("bcryptjs");
 
 const addService = asyncHandler(async (req, res) => {

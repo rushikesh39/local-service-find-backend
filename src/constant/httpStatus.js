@@ -1,5 +1,6 @@
 const httpStatus = {
   OK: 200,
+  Ok: 200,
   CREATED: 201,
   BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
@@ -7,7 +8,6 @@ const httpStatus = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   INTERNAL_SERVER_ERROR: 500,
-  TO_MANNY_REQUEST:429,
-  NOT_FOUND:404,
+  TO_MANNY_REQUEST: 429,
 };
-module.exports=httpStatus
+module.exports = httpStatus;

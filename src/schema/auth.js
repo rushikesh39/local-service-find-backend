@@ -7,6 +7,10 @@ const register = z
       .min(3, "Name should be at list 3 Character")
       .max(30, "Name should not be greater than 30 Character")
       .trim(),
+    role: z
+      .enum(["user", "provider"])
+      .optional()
+      .default("user"),
     mobile: z
       .string()
       .regex(/^[6-9]\d{9}$/, "Invalid Mobile No.")
